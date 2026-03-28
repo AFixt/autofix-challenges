@@ -23,11 +23,11 @@
  *   so they are intentionally omitted here
  */
 
-import { setRole, setAria, setTabIndex, ensureId, labelledBy } from '../lib/aria.js';
+import { setRole, setAria, ensureId, labelledBy } from '../lib/aria.js';
 import { onKeyDown } from '../lib/keyboard.js';
 import { rovingTabIndex } from '../lib/focus.js';
 import { queryAll } from '../lib/dom.js';
-import { observeChanges, onElementAdded } from '../lib/observer.js';
+import { createFix } from '../lib/fixFactory.js';
 
 function remediateRadioGroup(widget) {
   const groups = queryAll('.radio-group', widget);
@@ -108,20 +108,4 @@ function remediateRadioGroup(widget) {
   });
 }
 
-export function apply() {
-  const cleanups = [];
-
-  const setup = (widget) => {
-    remediateRadioGroup(widget);
-
-    const stop = observeChanges(widget, () => {
-      remediateRadioGroup(widget);
-    });
-    cleanups.push(stop);
-  };
-
-  const stopWatching = onElementAdded('.radio-widget', setup);
-  cleanups.push(stopWatching);
-
-  return () => cleanups.forEach((fn) => fn());
-}
+export const apply = createFix('.radio-widget', remediateRadioGroup);

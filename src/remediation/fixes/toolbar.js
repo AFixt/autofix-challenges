@@ -12,6 +12,8 @@
  * - Add Left/Right arrow key navigation with roving tabindex
  * - Add Home/End to jump to first/last toolbar item
  * - Skip disabled buttons during arrow key navigation
+ * - Add aria-label to icon-only buttons derived from title, data-label, or
+ *   text content, with a generic fallback when no meaningful label can be found
  *
  * Limitations discovered:
  * - Toolbar items may be a mix of buttons, dropdowns, and non-interactive
@@ -24,11 +26,11 @@
  *   grouping via visual whitespace cannot be remediated
  */
 
-import { setRole, setAria, setTabIndex, ensureId } from '../lib/aria.js';
-import { makeClickable, onKeyDown } from '../lib/keyboard.js';
+import { setRole, setAria, setTabIndex, ensureId, getLabel } from '../lib/aria.js';
+import { buttonify, onKeyDown } from '../lib/keyboard.js';
 import { rovingTabIndex } from '../lib/focus.js';
 import { queryAll } from '../lib/dom.js';
-import { observeChanges, onElementAdded } from '../lib/observer.js';
+import { createFix } from '../lib/fixFactory.js';
 
 function remediateToolbar(widget) {
   const toolbar = widget.querySelector('.toolbar');
@@ -52,11 +54,7 @@ function remediateToolbar(widget) {
   const buttons = queryAll('.toolbar-btn', toolbar);
 
   buttons.forEach((btn, bi) => {
-    const tag = btn.tagName.toLowerCase();
-    if (tag !== 'button') {
-      setRole(btn, 'button');
-      makeClickable(btn, `toolbar-btn-${bi}`);
-    }
+    buttonify(btn, `toolbar-btn-${bi}`);
 
     const isActive = btn.classList.contains('active');
     const isDisabled = btn.classList.contains('disabled');
@@ -65,6 +63,13 @@ function remediateToolbar(widget) {
 
     if (isDisabled) {
       setAria(btn, 'disabled', 'true');
+    }
+
+    // Add aria-label for icon-only buttons that lack a meaningful text label
+    const textContent = btn.textContent.trim();
+    const isIconOnly = !textContent || /^[\p{Emoji}\p{S}\p{So}]{1,3}$/u.test(textContent);
+    if (isIconOnly && !btn.getAttribute('aria-label')) {
+      setAria(btn, 'label', getLabel(btn, 'Button'));
     }
   });
 
@@ -114,20 +119,4 @@ function remediateToolbar(widget) {
   });
 }
 
-export function apply() {
-  const cleanups = [];
-
-  const setup = (widget) => {
-    remediateToolbar(widget);
-
-    const stop = observeChanges(widget, () => {
-      remediateToolbar(widget);
-    });
-    cleanups.push(stop);
-  };
-
-  const stopWatching = onElementAdded('.toolbar-widget', setup);
-  cleanups.push(stopWatching);
-
-  return () => cleanups.forEach((fn) => fn());
-}
+export const apply = createFix('.toolbar-widget', remediateToolbar);

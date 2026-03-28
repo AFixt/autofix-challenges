@@ -33,7 +33,7 @@
 import { setRole, setAria, ensureId } from '../lib/aria.js';
 import { onKeyDown, makeClickable } from '../lib/keyboard.js';
 import { queryAll } from '../lib/dom.js';
-import { observeChanges, onElementAdded } from '../lib/observer.js';
+import { createFix } from '../lib/fixFactory.js';
 
 /**
  * Calculate tree metadata for a node based on its DOM position.
@@ -228,20 +228,4 @@ function remediateTree(widget) {
   });
 }
 
-export function apply() {
-  const cleanups = [];
-
-  const setup = (widget) => {
-    remediateTree(widget);
-
-    const stop = observeChanges(widget, () => {
-      remediateTree(widget);
-    });
-    cleanups.push(stop);
-  };
-
-  const stopWatching = onElementAdded('.tree-widget', setup);
-  cleanups.push(stopWatching);
-
-  return () => cleanups.forEach((fn) => fn());
-}
+export const apply = createFix('.tree-widget', remediateTree);

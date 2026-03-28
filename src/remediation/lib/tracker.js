@@ -90,7 +90,7 @@ export function revertAll() {
 
   // Remove all event listeners
   for (const [el, handlerMap] of listeners) {
-    for (const [name, { type, handler }] of handlerMap) {
+    for (const [, { type, handler }] of handlerMap) {
       el.removeEventListener(type, handler);
     }
   }

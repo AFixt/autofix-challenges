@@ -7,6 +7,8 @@
  * - Add aria-controls linking each toggle to its panel (.product-full / .specs-content)
  * - Add Enter/Space keyboard activation to toggle elements
  * - Ensure controlled panels have unique IDs for aria-controls to reference
+ * - Move focus into the revealed content when the panel is expanded, so
+ *   keyboard users are aware that content has appeared
  *
  * Limitations discovered:
  * - Expanded state is inferred from the presence/visibility of the controlled
@@ -17,11 +19,14 @@
  *   event handler bindings on the toggle div
  * - Role "button" on a div does not inherit browser default styles (no focus
  *   ring in some browsers without explicit CSS — beyond the scope of this fix)
+ * - Focus management on expand uses requestAnimationFrame to wait for React
+ *   to finish rendering the panel; on slow devices the panel may not yet be
+ *   in the DOM when focus is attempted
  */
 
-import { setRole, setAria, setTabIndex, ensureId, controls } from '../lib/aria.js';
-import { makeClickable } from '../lib/keyboard.js';
-import { observeChanges, onElementAdded } from '../lib/observer.js';
+import { setAria, setTabIndex, ensureId, controls } from '../lib/aria.js';
+import { buttonify } from '../lib/keyboard.js';
+import { createFix } from '../lib/fixFactory.js';
 
 function isVisible(el) {
   if (!el) return false;
@@ -40,37 +45,25 @@ function remediateDisclosure(widget) {
 
     if (!toggle) return;
 
-    const tag = toggle.tagName.toLowerCase();
-    if (tag !== 'button') {
-      setRole(toggle, 'button');
-      setTabIndex(toggle, 0);
-      makeClickable(toggle, `disclosure-toggle-${i}`);
-    }
+    buttonify(toggle, `disclosure-toggle-${i}`);
 
     const expanded = isVisible(panel);
+    const wasExpanded = toggle.getAttribute('aria-expanded') === 'true';
     setAria(toggle, 'expanded', String(expanded));
 
     if (panel) {
       ensureId(panel, `disclosure-panel-${i}`);
       controls(toggle, panel);
+
+      // Focus into the newly revealed content
+      if (expanded && !wasExpanded) {
+        setTabIndex(panel, -1);
+        requestAnimationFrame(() => {
+          if (isVisible(panel)) panel.focus();
+        });
+      }
     }
   });
 }
 
-export function apply() {
-  const cleanups = [];
-
-  const setup = (widget) => {
-    remediateDisclosure(widget);
-
-    const stop = observeChanges(widget, () => {
-      remediateDisclosure(widget);
-    });
-    cleanups.push(stop);
-  };
-
-  const stopWatching = onElementAdded('.disclosure-widget', setup);
-  cleanups.push(stopWatching);
-
-  return () => cleanups.forEach((fn) => fn());
-}
+export const apply = createFix('.disclosure-widget', remediateDisclosure);

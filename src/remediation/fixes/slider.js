@@ -24,20 +24,10 @@
  *   match the application's defined large step
  */
 
-import { setRole, setAria, setTabIndex, ensureId, labelledBy } from '../lib/aria.js';
+import { setRole, setAria, setTabIndex, ensureId, labelledBy, extractValue, dispatchChange } from '../lib/aria.js';
 import { onKeyDown } from '../lib/keyboard.js';
 import { queryAll } from '../lib/dom.js';
-import { observeChanges, onElementAdded } from '../lib/observer.js';
-
-function getSliderValue(thumb) {
-  if (thumb.dataset.value !== undefined) return parseFloat(thumb.dataset.value);
-  const existing = thumb.getAttribute('aria-valuenow');
-  if (existing) return parseFloat(existing);
-  // Try to infer from left% style
-  const style = thumb.style.left;
-  if (style && style.endsWith('%')) return parseFloat(style);
-  return 0;
-}
+import { createFix } from '../lib/fixFactory.js';
 
 function remediateSlider(widget) {
   const controls = queryAll('.slider-control', widget);
@@ -54,7 +44,7 @@ function remediateSlider(widget) {
     const min = parseFloat(track?.dataset.min ?? control.dataset.min ?? '0');
     const max = parseFloat(track?.dataset.max ?? control.dataset.max ?? '100');
     const step = parseFloat(track?.dataset.step ?? control.dataset.step ?? '1');
-    let currentValue = getSliderValue(thumb);
+    let currentValue = extractValue(thumb, 'left', 0);
 
     setRole(thumb, 'slider');
     setTabIndex(thumb, 0);
@@ -74,7 +64,7 @@ function remediateSlider(widget) {
     }
 
     onKeyDown(thumb, `slider-keys-${ci}`, (e) => {
-      let newValue = getSliderValue(thumb);
+      let newValue = extractValue(thumb, 'left', 0);
       const largeStep = Math.round((max - min) * 0.1);
 
       switch (e.key) {
@@ -116,28 +106,9 @@ function remediateSlider(widget) {
 
       // Attempt to notify React by dispatching a custom input event
       thumb.dataset.value = String(newValue);
-      thumb.dispatchEvent(new CustomEvent('slider-change', {
-        bubbles: true,
-        detail: { value: newValue },
-      }));
+      dispatchChange(thumb, 'slider-change', { value: newValue });
     });
   });
 }
 
-export function apply() {
-  const cleanups = [];
-
-  const setup = (widget) => {
-    remediateSlider(widget);
-
-    const stop = observeChanges(widget, () => {
-      remediateSlider(widget);
-    });
-    cleanups.push(stop);
-  };
-
-  const stopWatching = onElementAdded('.slider-widget', setup);
-  cleanups.push(stopWatching);
-
-  return () => cleanups.forEach((fn) => fn());
-}
+export const apply = createFix('.slider-widget', remediateSlider);

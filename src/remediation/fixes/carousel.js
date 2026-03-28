@@ -9,6 +9,7 @@
  * - Add aria-live="polite" to the viewport so slide changes are announced
  * - Add keyboard activation (Enter/Space) to prev/next buttons and dots
  * - Add Left/Right arrow key navigation between slides via the viewport
+ * - Add aria-label to slide images that have no alt text
  *
  * Limitations discovered:
  * - Slide count is computed at remediation time; if slides are added/removed
@@ -18,12 +19,14 @@
  *   the component itself should pause auto-play on focus, which cannot be
  *   enforced purely via attribute remediation
  * - Dot indicators have no accessible label beyond their ordinal position
+ * - Image labels are derived from nearby slide title text; if slides have no
+ *   title element, the image receives a generic ordinal label
  */
 
 import { setRole, setAria, setTabIndex, ensureId } from '../lib/aria.js';
 import { makeClickable, arrowNavigation } from '../lib/keyboard.js';
 import { queryAll } from '../lib/dom.js';
-import { observeChanges, onElementAdded } from '../lib/observer.js';
+import { createFix } from '../lib/fixFactory.js';
 
 function remediateCarousel(widget) {
   const viewport = widget.querySelector('.carousel-viewport');
@@ -45,6 +48,16 @@ function remediateCarousel(widget) {
     setRole(slide, 'group');
     setAria(slide, 'label', `Slide ${i + 1} of ${total}`);
     ensureId(slide, `carousel-slide`);
+
+    // Add accessible labels to images within the slide
+    const imgs = queryAll('img', slide);
+    imgs.forEach((img) => {
+      if (!img.getAttribute('alt') || img.getAttribute('alt') === '') {
+        const title = slide.querySelector('.slide-title');
+        const label = title ? title.textContent.trim() : `Slide ${i + 1} image`;
+        img.setAttribute('alt', label);
+      }
+    });
   });
 
   if (prevBtn) {
@@ -89,20 +102,4 @@ function remediateCarousel(widget) {
   }
 }
 
-export function apply() {
-  const cleanups = [];
-
-  const setup = (widget) => {
-    remediateCarousel(widget);
-
-    const stop = observeChanges(widget, () => {
-      remediateCarousel(widget);
-    });
-    cleanups.push(stop);
-  };
-
-  const stopWatching = onElementAdded('.carousel-widget', setup);
-  cleanups.push(stopWatching);
-
-  return () => cleanups.forEach((fn) => fn());
-}
+export const apply = createFix('.carousel-widget', remediateCarousel);

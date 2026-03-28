@@ -9,6 +9,9 @@
  * - Associate visible label (.switch-name) with the switch via aria-labelledby
  * - Associate description (.switch-desc) via aria-describedby when present
  * - Group switch items within .switch-list using role="group" where appropriate
+ * - Include the visible status text ("On"/"Off") in aria-checked announcement
+ *   by hiding the redundant status span from AT (the switch role already
+ *   conveys on/off state)
  *
  * Limitations discovered:
  * - The checked state is inferred from a CSS class (.on) on .switch-track or
@@ -24,7 +27,7 @@
 import { setRole, setAria, setTabIndex, ensureId } from '../lib/aria.js';
 import { onKeyDown } from '../lib/keyboard.js';
 import { queryAll } from '../lib/dom.js';
-import { observeChanges, onElementAdded } from '../lib/observer.js';
+import { createFix } from '../lib/fixFactory.js';
 
 function isSwitchOn(track) {
   if (track.classList.contains('on')) return true;
@@ -67,6 +70,13 @@ function remediateSwitch(widget) {
       setAria(track, 'describedby', desc.id);
     }
 
+    // Hide the visible status text from AT since role="switch" + aria-checked
+    // already conveys the on/off state; duplicate announcement is confusing
+    const status = item.querySelector('.switch-status');
+    if (status) {
+      setAria(status, 'hidden', 'true');
+    }
+
     onKeyDown(track, `switch-keys-${i}`, (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
@@ -76,20 +86,4 @@ function remediateSwitch(widget) {
   });
 }
 
-export function apply() {
-  const cleanups = [];
-
-  const setup = (widget) => {
-    remediateSwitch(widget);
-
-    const stop = observeChanges(widget, () => {
-      remediateSwitch(widget);
-    });
-    cleanups.push(stop);
-  };
-
-  const stopWatching = onElementAdded('.switch-widget', setup);
-  cleanups.push(stopWatching);
-
-  return () => cleanups.forEach((fn) => fn());
-}
+export const apply = createFix('.switch-widget', remediateSwitch);

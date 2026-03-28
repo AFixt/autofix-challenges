@@ -24,9 +24,9 @@
  */
 
 import { setRole, setAria, setTabIndex, ensureId, labelledBy, controls } from '../lib/aria.js';
-import { makeClickable, onKeyDown } from '../lib/keyboard.js';
+import { buttonify, onKeyDown } from '../lib/keyboard.js';
 import { queryAll } from '../lib/dom.js';
-import { observeChanges, onElementAdded } from '../lib/observer.js';
+import { createFix } from '../lib/fixFactory.js';
 
 function isOpen(dropdown) {
   if (!dropdown) return false;
@@ -40,12 +40,7 @@ function remediateListbox(widget) {
   const options = queryAll('.listbox-option', widget);
 
   if (trigger) {
-    const tag = trigger.tagName.toLowerCase();
-    if (tag !== 'button') {
-      setRole(trigger, 'button');
-      setTabIndex(trigger, 0);
-      makeClickable(trigger, 'listbox-trigger');
-    }
+    buttonify(trigger, 'listbox-trigger');
     setAria(trigger, 'haspopup', 'listbox');
     setAria(trigger, 'expanded', String(isOpen(dropdown)));
 
@@ -143,20 +138,4 @@ function remediateListbox(widget) {
   }
 }
 
-export function apply() {
-  const cleanups = [];
-
-  const setup = (widget) => {
-    remediateListbox(widget);
-
-    const stop = observeChanges(widget, () => {
-      remediateListbox(widget);
-    });
-    cleanups.push(stop);
-  };
-
-  const stopWatching = onElementAdded('.listbox-widget', setup);
-  cleanups.push(stopWatching);
-
-  return () => cleanups.forEach((fn) => fn());
-}
+export const apply = createFix('.listbox-widget', remediateListbox);

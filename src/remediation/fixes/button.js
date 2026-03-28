@@ -21,7 +21,7 @@
 import { setRole, setAria, setTabIndex } from '../lib/aria.js';
 import { onKeyDown, makeClickable } from '../lib/keyboard.js';
 import { queryAll } from '../lib/dom.js';
-import { observeChanges, onElementAdded } from '../lib/observer.js';
+import { createFix } from '../lib/fixFactory.js';
 
 function remediateButton(widget) {
   const buttons = queryAll('.btn-demo', widget);
@@ -70,20 +70,4 @@ function remediateButton(widget) {
   });
 }
 
-export function apply() {
-  const cleanups = [];
-
-  const setup = (widget) => {
-    remediateButton(widget);
-
-    const stop = observeChanges(widget, () => {
-      remediateButton(widget);
-    });
-    cleanups.push(stop);
-  };
-
-  const stopWatching = onElementAdded('.button-widget', setup);
-  cleanups.push(stopWatching);
-
-  return () => cleanups.forEach((fn) => fn());
-}
+export const apply = createFix('.button-widget', remediateButton);

@@ -23,11 +23,11 @@
  * - Each sort click triggers a full re-render, requiring re-application of all fixes.
  */
 
-import { setRole, setAria, setTabIndex, ensureId } from '../lib/aria.js';
-import { makeClickable } from '../lib/keyboard.js';
+import { setRole, setAria } from '../lib/aria.js';
+import { buttonify } from '../lib/keyboard.js';
 import { queryAll } from '../lib/dom.js';
 import { announce } from '../lib/announce.js';
-import { observeChanges, onElementAdded } from '../lib/observer.js';
+import { createFix } from '../lib/fixFactory.js';
 import { trackListener } from '../lib/tracker.js';
 
 function remediateTable(widget) {
@@ -58,9 +58,7 @@ function remediateTable(widget) {
 
     const trigger = cell.querySelector('.sort-trigger');
     if (trigger) {
-      setRole(trigger, 'button');
-      setTabIndex(trigger, 0);
-      makeClickable(trigger, `sort-${i}`);
+      buttonify(trigger, `sort-${i}`);
 
       // Detect current sort state from the arrow indicator
       const arrow = trigger.querySelector('.sort-arrow');
@@ -119,20 +117,4 @@ function remediateTable(widget) {
   });
 }
 
-export function apply() {
-  const cleanups = [];
-
-  const setup = (widget) => {
-    remediateTable(widget);
-
-    const stop = observeChanges(widget, () => {
-      remediateTable(widget);
-    });
-    cleanups.push(stop);
-  };
-
-  const stopWatching = onElementAdded('.table-widget', setup);
-  cleanups.push(stopWatching);
-
-  return () => cleanups.forEach((fn) => fn());
-}
+export const apply = createFix('.table-widget', remediateTable);

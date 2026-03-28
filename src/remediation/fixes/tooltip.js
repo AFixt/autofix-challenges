@@ -26,7 +26,7 @@
 import { setRole, setAria, setTabIndex, ensureId } from '../lib/aria.js';
 import { makeClickable, onKeyDown } from '../lib/keyboard.js';
 import { queryAll } from '../lib/dom.js';
-import { observeChanges, onElementAdded } from '../lib/observer.js';
+import { createFix } from '../lib/fixFactory.js';
 
 function remediateTooltip(widget) {
   const triggers = queryAll('.tip-trigger', widget);
@@ -116,20 +116,4 @@ function remediateTooltip(widget) {
   });
 }
 
-export function apply() {
-  const cleanups = [];
-
-  const setup = (widget) => {
-    remediateTooltip(widget);
-
-    const stop = observeChanges(widget, () => {
-      remediateTooltip(widget);
-    });
-    cleanups.push(stop);
-  };
-
-  const stopWatching = onElementAdded('.tooltip-widget', setup);
-  cleanups.push(stopWatching);
-
-  return () => cleanups.forEach((fn) => fn());
-}
+export const apply = createFix('.tooltip-widget', remediateTooltip);

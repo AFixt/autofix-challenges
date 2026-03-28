@@ -20,10 +20,10 @@
  *   controlled-component binding
  */
 
-import { setRole, setAria, setTabIndex, ensureId, labelledBy, controls } from '../lib/aria.js';
+import { setRole, setAria, setTabIndex, ensureId, labelledBy } from '../lib/aria.js';
 import { makeClickable } from '../lib/keyboard.js';
 import { queryAll } from '../lib/dom.js';
-import { observeChanges, onElementAdded } from '../lib/observer.js';
+import { createFix } from '../lib/fixFactory.js';
 
 function remediateCheckbox(widget) {
   const groups = queryAll('.checkbox-group', widget);
@@ -39,7 +39,6 @@ function remediateCheckbox(widget) {
 
     const selectAll = group.querySelector('.select-all');
     const items = queryAll('.checkbox-item', group);
-    const boxes = items.map((item) => item.querySelector('.checkbox-box')).filter(Boolean);
     const boxIds = [];
 
     items.forEach((item, ii) => {
@@ -112,20 +111,4 @@ function remediateCheckbox(widget) {
   });
 }
 
-export function apply() {
-  const cleanups = [];
-
-  const setup = (widget) => {
-    remediateCheckbox(widget);
-
-    const stop = observeChanges(widget, () => {
-      remediateCheckbox(widget);
-    });
-    cleanups.push(stop);
-  };
-
-  const stopWatching = onElementAdded('.checkbox-widget', setup);
-  cleanups.push(stopWatching);
-
-  return () => cleanups.forEach((fn) => fn());
-}
+export const apply = createFix('.checkbox-widget', remediateCheckbox);

@@ -27,7 +27,7 @@
 import { setRole, setAria, setTabIndex, ensureId, labelledBy, controls } from '../lib/aria.js';
 import { onKeyDown } from '../lib/keyboard.js';
 import { queryAll } from '../lib/dom.js';
-import { observeChanges, onElementAdded } from '../lib/observer.js';
+import { createFix } from '../lib/fixFactory.js';
 
 function remediateCombobox(widget) {
   const input = widget.querySelector('.combobox-input');
@@ -122,20 +122,4 @@ function remediateCombobox(widget) {
   }
 }
 
-export function apply() {
-  const cleanups = [];
-
-  const setup = (widget) => {
-    remediateCombobox(widget);
-
-    const stop = observeChanges(widget, () => {
-      remediateCombobox(widget);
-    });
-    cleanups.push(stop);
-  };
-
-  const stopWatching = onElementAdded('.combobox-widget', setup);
-  cleanups.push(stopWatching);
-
-  return () => cleanups.forEach((fn) => fn());
-}
+export const apply = createFix('.combobox-widget', remediateCombobox);

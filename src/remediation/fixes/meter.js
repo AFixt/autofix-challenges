@@ -8,6 +8,8 @@
  * - Add aria-valuetext with a human-readable description from .meter-text
  * - Add aria-label from .meter-label to give the meter a name
  * - Associate .meter-card container with role="group" and a label
+ * - Enhance aria-valuetext with status level (low/medium/high/critical) when
+ *   the value can be interpreted as a percentage
  *
  * Limitations discovered:
  * - aria-valuenow is inferred from the CSS width percentage of .meter-bar-fill;
@@ -18,11 +20,14 @@
  *   may not be supported in older browser/AT combinations
  * - aria-valuemin and aria-valuemax are hardcoded to 0 and 100 respectively;
  *   actual min/max should be read from data attributes when available
+ * - Status level thresholds (low<25, medium<50, high<75, critical≥75) are
+ *   generic guesses; the actual thresholds depend on what the meter measures
+ *   and cannot be determined from the DOM alone
  */
 
 import { setRole, setAria, ensureId, labelledBy } from '../lib/aria.js';
 import { queryAll } from '../lib/dom.js';
-import { observeChanges, onElementAdded } from '../lib/observer.js';
+import { createFix } from '../lib/fixFactory.js';
 
 function extractValue(fill) {
   // Try inline style width first (e.g. style="width: 72%")
@@ -41,6 +46,13 @@ function extractValue(fill) {
   if (existing) return parseFloat(existing);
 
   return null;
+}
+
+function getStatusLevel(pct) {
+  if (pct < 25) return 'low';
+  if (pct < 50) return 'medium';
+  if (pct < 75) return 'high';
+  return 'critical';
 }
 
 function remediateMeter(widget) {
@@ -68,7 +80,11 @@ function remediateMeter(widget) {
       }
 
       if (text) {
-        setAria(fill, 'valuetext', text.textContent.trim());
+        const textContent = text.textContent.trim();
+        const pct = (value !== null && max > min) ? ((value - min) / (max - min)) * 100 : null;
+        const level = pct !== null ? getStatusLevel(pct) : null;
+        const valuetext = level ? `${textContent} (${level})` : textContent;
+        setAria(fill, 'valuetext', valuetext);
       }
 
       if (label) {
@@ -87,20 +103,4 @@ function remediateMeter(widget) {
   });
 }
 
-export function apply() {
-  const cleanups = [];
-
-  const setup = (widget) => {
-    remediateMeter(widget);
-
-    const stop = observeChanges(widget, () => {
-      remediateMeter(widget);
-    });
-    cleanups.push(stop);
-  };
-
-  const stopWatching = onElementAdded('.meter-widget', setup);
-  cleanups.push(stopWatching);
-
-  return () => cleanups.forEach((fn) => fn());
-}
+export const apply = createFix('.meter-widget', remediateMeter);

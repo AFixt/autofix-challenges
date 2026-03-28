@@ -9,6 +9,7 @@
  * - Make .post-action buttons accessible with role, tabindex, and keyboard
  * - Make .load-more accessible with role="button" and keyboard activation
  * - Add Page Down / Page Up key handling for feed navigation between articles
+ * - Add aria-label to .post-time elements with human-readable timestamps
  *
  * Limitations discovered:
  * - aria-setsize should reflect total feed size; if more posts are loaded
@@ -18,12 +19,27 @@
  *   already be within an article for the pattern to work as specified by ARIA
  * - Post action buttons (like, share) have text content but may be icon-only
  *   in some renders; fallback labels are generated from button text content
+ * - Timestamp labels are inferred by parsing shorthand notation (e.g. "2h"→
+ *   "2 hours ago"); non-standard formats will retain the original text
  */
 
 import { setRole, setAria, setTabIndex, ensureId, labelledBy } from '../lib/aria.js';
-import { makeClickable, onKeyDown } from '../lib/keyboard.js';
+import { buttonify, onKeyDown } from '../lib/keyboard.js';
 import { queryAll } from '../lib/dom.js';
-import { observeChanges, onElementAdded } from '../lib/observer.js';
+import { createFix } from '../lib/fixFactory.js';
+
+const TIME_UNITS = {
+  s: 'second', m: 'minute', h: 'hour', d: 'day', w: 'week', mo: 'month', y: 'year',
+};
+
+function expandTimestamp(text) {
+  const match = text.trim().match(/^(\d+)\s*(s|mo|m|h|d|w|y)$/);
+  if (!match) return text;
+  const num = parseInt(match[1], 10);
+  const unit = TIME_UNITS[match[2]];
+  if (!unit) return text;
+  return `${num} ${unit}${num !== 1 ? 's' : ''} ago`;
+}
 
 function remediateFeed(widget) {
   const container = widget.querySelector('.feed-container');
@@ -50,14 +66,19 @@ function remediateFeed(widget) {
       labelledBy(post, author);
     }
 
+    // Make timestamps human-readable
+    const time = post.querySelector('.post-time');
+    if (time) {
+      const raw = time.textContent.trim();
+      const expanded = expandTimestamp(raw);
+      if (expanded !== raw) {
+        setAria(time, 'label', expanded);
+      }
+    }
+
     const actions = queryAll('.post-action', post);
     actions.forEach((action, ai) => {
-      const tag = action.tagName.toLowerCase();
-      if (tag !== 'button') {
-        setRole(action, 'button');
-        setTabIndex(action, 0);
-        makeClickable(action, `feed-action-${i}-${ai}`);
-      }
+      buttonify(action, `feed-action-${i}-${ai}`);
       if (!action.getAttribute('aria-label') && action.textContent.trim()) {
         setAria(action, 'label', action.textContent.trim());
       }
@@ -65,12 +86,7 @@ function remediateFeed(widget) {
   });
 
   if (loadMore) {
-    const tag = loadMore.tagName.toLowerCase();
-    if (tag !== 'button') {
-      setRole(loadMore, 'button');
-      setTabIndex(loadMore, 0);
-      makeClickable(loadMore, 'feed-load-more');
-    }
+    buttonify(loadMore, 'feed-load-more');
   }
 
   // Page Down / Page Up navigation between articles
@@ -96,20 +112,4 @@ function remediateFeed(widget) {
   }
 }
 
-export function apply() {
-  const cleanups = [];
-
-  const setup = (widget) => {
-    remediateFeed(widget);
-
-    const stop = observeChanges(widget, () => {
-      remediateFeed(widget);
-    });
-    cleanups.push(stop);
-  };
-
-  const stopWatching = onElementAdded('.feed-widget', setup);
-  cleanups.push(stopWatching);
-
-  return () => cleanups.forEach((fn) => fn());
-}
+export const apply = createFix('.feed-widget', remediateFeed);

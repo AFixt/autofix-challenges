@@ -24,19 +24,10 @@
  *   dynamic approach
  */
 
-import { setRole, setAria, setTabIndex, ensureId } from '../lib/aria.js';
+import { setRole, setAria, setTabIndex, ensureId, extractValue, dispatchChange } from '../lib/aria.js';
 import { onKeyDown } from '../lib/keyboard.js';
 import { queryAll } from '../lib/dom.js';
-import { observeChanges, onElementAdded } from '../lib/observer.js';
-
-function getThumbValue(thumb) {
-  if (thumb.dataset.value !== undefined) return parseFloat(thumb.dataset.value);
-  const existing = thumb.getAttribute('aria-valuenow');
-  if (existing) return parseFloat(existing);
-  const style = thumb.style.left;
-  if (style && style.endsWith('%')) return parseFloat(style);
-  return 0;
-}
+import { createFix } from '../lib/fixFactory.js';
 
 function remediateMultiThumbSlider(widget) {
   const controls = queryAll('.mts-control', widget);
@@ -62,7 +53,7 @@ function remediateMultiThumbSlider(widget) {
       setAria(thumb, 'valuemin', String(min));
       setAria(thumb, 'valuemax', String(max));
 
-      const currentValue = getThumbValue(thumb);
+      const currentValue = extractValue(thumb, 'left', 0);
       setAria(thumb, 'valuenow', String(currentValue));
       setAria(thumb, 'valuetext', String(currentValue));
 
@@ -81,11 +72,11 @@ function remediateMultiThumbSlider(widget) {
       }
 
       onKeyDown(thumb, `mts-keys-${ci}-${ti}`, (e) => {
-        let newValue = getThumbValue(thumb);
+        let newValue = extractValue(thumb, 'left', 0);
 
         // Get sibling thumb value for constraint
         const siblingThumb = thumbs[ti === 0 ? 1 : 0];
-        const siblingValue = siblingThumb ? getThumbValue(siblingThumb) : null;
+        const siblingValue = siblingThumb ? extractValue(siblingThumb, 'left', 0) : null;
 
         const effectiveMin = ti === 0 ? min : (siblingValue !== null ? siblingValue : min);
         const effectiveMax = ti === 1 ? max : (siblingValue !== null ? siblingValue : max);
@@ -125,29 +116,10 @@ function remediateMultiThumbSlider(widget) {
         setAria(thumb, 'valuetext', String(newValue));
         thumb.dataset.value = String(newValue);
 
-        thumb.dispatchEvent(new CustomEvent('mts-change', {
-          bubbles: true,
-          detail: { value: newValue, index: ti },
-        }));
+        dispatchChange(thumb, 'mts-change', { value: newValue, index: ti });
       });
     });
   });
 }
 
-export function apply() {
-  const cleanups = [];
-
-  const setup = (widget) => {
-    remediateMultiThumbSlider(widget);
-
-    const stop = observeChanges(widget, () => {
-      remediateMultiThumbSlider(widget);
-    });
-    cleanups.push(stop);
-  };
-
-  const stopWatching = onElementAdded('.mts-widget', setup);
-  cleanups.push(stopWatching);
-
-  return () => cleanups.forEach((fn) => fn());
-}
+export const apply = createFix('.mts-widget', remediateMultiThumbSlider);

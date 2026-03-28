@@ -24,11 +24,11 @@
  *   read from title, data-label, or a generic fallback
  */
 
-import { setRole, setAria, setTabIndex, ensureId, controls } from '../lib/aria.js';
-import { makeClickable, onKeyDown } from '../lib/keyboard.js';
-import { saveFocus } from '../lib/focus.js';
+import { setRole, setAria, setTabIndex, ensureId, controls, getLabel } from '../lib/aria.js';
+import { buttonify, onKeyDown } from '../lib/keyboard.js';
+
 import { queryAll } from '../lib/dom.js';
-import { observeChanges, onElementAdded } from '../lib/observer.js';
+import { createFix } from '../lib/fixFactory.js';
 
 function isMenuOpen(menu) {
   if (!menu) return false;
@@ -43,23 +43,13 @@ function remediateMenuButton(widget) {
       ? trigger.nextElementSibling
       : widget.querySelector('.menubutton-menu');
 
-    const tag = trigger.tagName.toLowerCase();
-    if (tag !== 'button') {
-      setRole(trigger, 'button');
-      setTabIndex(trigger, 0);
-      makeClickable(trigger, `menubutton-trigger-${ti}`);
-    }
+    buttonify(trigger, `menubutton-trigger-${ti}`);
 
     setAria(trigger, 'haspopup', 'menu');
     setAria(trigger, 'expanded', String(isMenuOpen(menu)));
 
     if (!trigger.getAttribute('aria-label') && trigger.classList.contains('icon-trigger')) {
-      const label =
-        trigger.getAttribute('title') ||
-        trigger.dataset.label ||
-        trigger.textContent.trim() ||
-        'Menu';
-      setAria(trigger, 'label', label);
+      setAria(trigger, 'label', getLabel(trigger, 'Menu'));
     }
 
     if (menu) {
@@ -95,7 +85,7 @@ function remediateMenuButton(widget) {
     ensureId(menu, `menubutton-menu-${mi}`);
 
     const items = queryAll('.menubutton-item', menu);
-    items.forEach((item, ii) => {
+    items.forEach((item) => {
       setRole(item, 'menuitem');
       setTabIndex(item, -1);
     });
@@ -146,20 +136,4 @@ function remediateMenuButton(widget) {
   });
 }
 
-export function apply() {
-  const cleanups = [];
-
-  const setup = (widget) => {
-    remediateMenuButton(widget);
-
-    const stop = observeChanges(widget, () => {
-      remediateMenuButton(widget);
-    });
-    cleanups.push(stop);
-  };
-
-  const stopWatching = onElementAdded('.menubutton-widget', setup);
-  cleanups.push(stopWatching);
-
-  return () => cleanups.forEach((fn) => fn());
-}
+export const apply = createFix('.menubutton-widget', remediateMenuButton);

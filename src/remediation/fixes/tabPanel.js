@@ -25,7 +25,7 @@ import { setRole, setAria, ensureId, controls, labelledBy } from '../lib/aria.js
 import { arrowNavigation, makeClickable } from '../lib/keyboard.js';
 import { rovingTabIndex } from '../lib/focus.js';
 import { queryAll } from '../lib/dom.js';
-import { observeChanges, onElementAdded } from '../lib/observer.js';
+import { createFix } from '../lib/fixFactory.js';
 
 function remediateTabs(widget) {
   const tabList = widget.querySelector('.tab-list');
@@ -38,13 +38,13 @@ function remediateTabs(widget) {
   setRole(tabList, 'tablist');
   setRole(panel, 'tabpanel');
 
-  const panelId = ensureId(panel, 'tabpanel');
+  ensureId(panel, 'tabpanel');
 
   let activeIndex = 0;
 
   tabs.forEach((tab, i) => {
     setRole(tab, 'tab');
-    const tabId = ensureId(tab, 'tab');
+    ensureId(tab, 'tab');
 
     const isActive = tab.classList.contains('active');
     setAria(tab, 'selected', isActive);
@@ -68,28 +68,11 @@ function remediateTabs(widget) {
     wrap: true,
     homeEnd: true,
     name: 'tabArrowNav',
-    onFocus: (focusedTab, index) => {
+    onFocus: (focusedTab) => {
       // Activate the tab by clicking it (triggers React state update)
       focusedTab.click();
     },
   });
 }
 
-export function apply() {
-  const cleanups = [];
-
-  const setup = (widget) => {
-    remediateTabs(widget);
-
-    // Re-apply after React re-renders (state changes strip attributes)
-    const stop = observeChanges(widget, () => {
-      remediateTabs(widget);
-    });
-    cleanups.push(stop);
-  };
-
-  const stopWatching = onElementAdded('.tabs-widget', setup);
-  cleanups.push(stopWatching);
-
-  return () => cleanups.forEach((fn) => fn());
-}
+export const apply = createFix('.tabs-widget', remediateTabs);

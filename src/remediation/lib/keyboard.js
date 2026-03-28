@@ -7,6 +7,7 @@
  */
 
 import { trackListener, untrackListener } from './tracker.js';
+import { setRole, setTabIndex } from './aria.js';
 
 const HANDLER_KEY = '__remediationHandlers';
 
@@ -46,6 +47,21 @@ export function makeClickable(el, name = 'clickable') {
       el.click();
     }
   });
+}
+
+/**
+ * Make a non-button element (div/span) fully act like a button.
+ * Adds role="button", tabindex="0", and Enter/Space → click activation.
+ * No-ops if the element is already a <button>.
+ */
+export function buttonify(el, name = 'btn') {
+  if (!el) return;
+  const tag = el.tagName.toLowerCase();
+  if (tag !== 'button') {
+    setRole(el, 'button');
+    setTabIndex(el, 0);
+    makeClickable(el, name);
+  }
 }
 
 /**

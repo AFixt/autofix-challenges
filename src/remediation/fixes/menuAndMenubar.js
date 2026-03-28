@@ -27,7 +27,7 @@ import { setRole, setAria, setTabIndex, ensureId } from '../lib/aria.js';
 import { onKeyDown } from '../lib/keyboard.js';
 import { rovingTabIndex } from '../lib/focus.js';
 import { queryAll } from '../lib/dom.js';
-import { observeChanges, onElementAdded } from '../lib/observer.js';
+import { createFix } from '../lib/fixFactory.js';
 
 function isExpanded(el) {
   return el?.getAttribute('aria-expanded') === 'true' ||
@@ -148,20 +148,4 @@ function remediateMenubar(widget) {
   });
 }
 
-export function apply() {
-  const cleanups = [];
-
-  const setup = (widget) => {
-    remediateMenubar(widget);
-
-    const stop = observeChanges(widget, () => {
-      remediateMenubar(widget);
-    });
-    cleanups.push(stop);
-  };
-
-  const stopWatching = onElementAdded('.menubar-widget', setup);
-  cleanups.push(stopWatching);
-
-  return () => cleanups.forEach((fn) => fn());
-}
+export const apply = createFix('.menubar-widget', remediateMenubar);

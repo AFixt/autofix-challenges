@@ -21,7 +21,6 @@
 import { setRole, setAria, setTabIndex, labelledBy, ensureId } from '../lib/aria.js';
 import { onKeyDown, makeClickable } from '../lib/keyboard.js';
 import { trapFocus, focusFirst, saveFocus } from '../lib/focus.js';
-import { queryAll } from '../lib/dom.js';
 import { onElementAdded, onElementRemoved } from '../lib/observer.js';
 
 let restoreFocus = null;

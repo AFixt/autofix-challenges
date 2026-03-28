@@ -104,3 +104,55 @@ export function setTabIndex(el, index) {
     el.tabIndex = index;
   }
 }
+
+/**
+ * Derive an accessible label from multiple fallback sources.
+ * Checks aria-label, title, data-label, then text content.
+ * Returns the fallback if nothing meaningful is found.
+ */
+export function getLabel(el, fallback = 'Element') {
+  if (!el) return fallback;
+  return (
+    el.getAttribute('aria-label') ||
+    el.getAttribute('title') ||
+    el.dataset.label ||
+    el.textContent.trim() ||
+    fallback
+  );
+}
+
+/**
+ * Extract a numeric value from an element's data attributes, inline styles,
+ * or existing ARIA attributes, in that priority order.
+ *
+ * @param {Element} el - The element to read from
+ * @param {string} [cssProp] - CSS property name to check (e.g. 'left', 'width')
+ * @param {number} [defaultValue=0] - Returned when no value is found
+ */
+export function extractValue(el, cssProp, defaultValue = 0) {
+  if (!el) return defaultValue;
+
+  // 1. data-value attribute (most explicit)
+  if (el.dataset.value !== undefined) return parseFloat(el.dataset.value);
+
+  // 2. Existing aria-valuenow
+  const existing = el.getAttribute('aria-valuenow');
+  if (existing) return parseFloat(existing);
+
+  // 3. Inline style percentage
+  if (cssProp) {
+    const style = el.style[cssProp];
+    if (style && style.endsWith('%')) return parseFloat(style);
+  }
+
+  return defaultValue;
+}
+
+/**
+ * Dispatch a custom event as a workaround for notifying components
+ * of value changes when React state cannot be modified directly.
+ */
+export function dispatchChange(el, eventName, detail = {}) {
+  if (!el) return;
+  el.dispatchEvent(new CustomEvent(eventName, { bubbles: true, detail }));
+}

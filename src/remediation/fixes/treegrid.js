@@ -15,6 +15,7 @@
  * - Right arrow on a collapsed row expands it; on a cell moves right
  * - Add Home/End for first/last cell in current row
  * - Add Ctrl+Home/Ctrl+End for first/last cell in entire grid
+ * - Add aria-colindex to each cell for column position
  *
  * Limitations discovered:
  * - Nesting depth (aria-level) is inferred from indentation data attributes or
@@ -26,11 +27,11 @@
  *   each row expand/collapse, which happens via MutationObserver re-apply
  */
 
-import { setRole, setAria, setTabIndex, ensureId } from '../lib/aria.js';
+import { setRole, setAria, ensureId } from '../lib/aria.js';
 import { onKeyDown } from '../lib/keyboard.js';
 import { rovingTabIndex } from '../lib/focus.js';
 import { queryAll } from '../lib/dom.js';
-import { observeChanges, onElementAdded } from '../lib/observer.js';
+import { createFix } from '../lib/fixFactory.js';
 
 function getRowLevel(row) {
   if (row.dataset.level) return parseInt(row.dataset.level, 10);
@@ -63,9 +64,10 @@ function remediateTreegrid(widget) {
   if (header) {
     setRole(header, 'row');
     const hcells = queryAll('.tg-hcell', header);
-    hcells.forEach((cell) => {
+    hcells.forEach((cell, ci) => {
       setRole(cell, 'columnheader');
       ensureId(cell, 'tg-hcell');
+      setAria(cell, 'colindex', String(ci + 1));
     });
   }
 
@@ -95,6 +97,7 @@ function remediateTreegrid(widget) {
         setRole(cell, 'gridcell');
       }
       ensureId(cell, `tg-cell-${ri}-${ci}`);
+      setAria(cell, 'colindex', String(ci + 1));
     });
   });
 
@@ -129,7 +132,6 @@ function remediateTreegrid(widget) {
     let nextRow = curRow;
     let nextCol = curCol;
 
-    const dataRows = queryAll('.tg-row', widget);
     const currentDomRow = current?.closest('.tg-row');
 
     switch (e.key) {
@@ -191,20 +193,4 @@ function remediateTreegrid(widget) {
   });
 }
 
-export function apply() {
-  const cleanups = [];
-
-  const setup = (widget) => {
-    remediateTreegrid(widget);
-
-    const stop = observeChanges(widget, () => {
-      remediateTreegrid(widget);
-    });
-    cleanups.push(stop);
-  };
-
-  const stopWatching = onElementAdded('.treegrid-widget', setup);
-  cleanups.push(stopWatching);
-
-  return () => cleanups.forEach((fn) => fn());
-}
+export const apply = createFix('.treegrid-widget', remediateTreegrid);

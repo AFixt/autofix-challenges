@@ -6,6 +6,7 @@
  * - Add Enter key activation to fake links (Space is NOT standard for links)
  * - Add aria-label to .image-link elements that contain only an image and no text
  * - Add aria-label to .card-link elements using visible card title text
+ * - Add "(opens in new window)" suffix to external links (.external class)
  * - Warn (via aria-label fallback) when no accessible name can be computed
  *
  * Limitations discovered:
@@ -17,12 +18,14 @@
  *   if the image has no alt and no title, the label will be empty/generic
  * - Card links with multiple text nodes use the first heading found; if no
  *   heading exists, all text content is concatenated and may be verbose
+ * - External link detection relies on the .external CSS class; links that
+ *   open in new windows without this class will not receive the warning
  */
 
-import { setRole, setAria, setTabIndex, ensureId } from '../lib/aria.js';
+import { setRole, setAria, setTabIndex } from '../lib/aria.js';
 import { onKeyDown } from '../lib/keyboard.js';
 import { queryAll } from '../lib/dom.js';
-import { observeChanges, onElementAdded } from '../lib/observer.js';
+import { createFix } from '../lib/fixFactory.js';
 
 function remediateLink(widget) {
   // Fake links (div/span acting as links)
@@ -39,6 +42,14 @@ function remediateLink(widget) {
           link.click();
         }
       });
+    }
+
+    // Warn screen reader users about external links that open in new windows
+    if (link.classList.contains('external') && !link.getAttribute('aria-label')) {
+      const text = link.textContent.trim();
+      if (text) {
+        setAria(link, 'label', `${text} (opens in new window)`);
+      }
     }
   });
 
@@ -102,20 +113,4 @@ function remediateLink(widget) {
   });
 }
 
-export function apply() {
-  const cleanups = [];
-
-  const setup = (widget) => {
-    remediateLink(widget);
-
-    const stop = observeChanges(widget, () => {
-      remediateLink(widget);
-    });
-    cleanups.push(stop);
-  };
-
-  const stopWatching = onElementAdded('.link-widget', setup);
-  cleanups.push(stopWatching);
-
-  return () => cleanups.forEach((fn) => fn());
-}
+export const apply = createFix('.link-widget', remediateLink);

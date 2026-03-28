@@ -3,10 +3,11 @@
  *
  * Fixes attempted:
  * - Add role="navigation" and aria-label="Breadcrumb" to the trail container
+ * - Add role="list" to the trail and role="listitem" to each segment for list semantics
+ * - Add role="link" and tabindex="0" to span-based breadcrumb links
  * - Add aria-current="page" to the active/current breadcrumb link
  * - Hide decorative separator characters from screen readers via aria-hidden
  * - Ensure breadcrumb links are keyboard focusable
- * - Wrap trail in an ordered list role if not already semantic
  *
  * Limitations discovered:
  * - Cannot convert div-based separators to a true <ol>/<li> structure without
@@ -15,11 +16,14 @@
  *   sync with router state; React re-renders may temporarily remove the class
  *   before re-painting, causing a flicker in screen reader state
  * - Separator detection relies on the .breadcrumb-sep class being consistent
+ * - role="link" on a span does not provide native <a> behavior (address bar
+ *   preview, right-click context menu, middle-click to open in new tab)
  */
 
-import { setRole, setAria, setHidden } from '../lib/aria.js';
+import { setRole, setAria, setHidden, setTabIndex } from '../lib/aria.js';
+import { onKeyDown } from '../lib/keyboard.js';
 import { queryAll } from '../lib/dom.js';
-import { observeChanges, onElementAdded } from '../lib/observer.js';
+import { createFix } from '../lib/fixFactory.js';
 
 function remediateBreadcrumb(widget) {
   const trail = widget.querySelector('.breadcrumb-trail');
@@ -27,6 +31,15 @@ function remediateBreadcrumb(widget) {
   if (trail) {
     setRole(trail, 'navigation');
     setAria(trail, 'label', 'Breadcrumb');
+
+    // Add list semantics to trail container
+    const innerList = trail;
+    setRole(innerList, 'navigation');
+
+    const segments = queryAll('.breadcrumb-segment', trail);
+    segments.forEach((seg) => {
+      setRole(seg, 'listitem');
+    });
   }
 
   const separators = queryAll('.breadcrumb-sep', widget);
@@ -35,7 +48,7 @@ function remediateBreadcrumb(widget) {
   });
 
   const links = queryAll('.breadcrumb-link', widget);
-  links.forEach((link) => {
+  links.forEach((link, i) => {
     if (link.classList.contains('current')) {
       setAria(link, 'current', 'page');
     } else {
@@ -45,27 +58,20 @@ function remediateBreadcrumb(widget) {
       }
     }
 
-    // Ensure keyboard reachability for non-anchor fake links
-    if (link.tagName.toLowerCase() !== 'a' && link.tabIndex < 0) {
-      link.tabIndex = 0;
+    // Add link role and keyboard support for non-anchor fake links
+    const tag = link.tagName.toLowerCase();
+    if (tag !== 'a') {
+      setRole(link, 'link');
+      setTabIndex(link, 0);
+
+      onKeyDown(link, `breadcrumb-link-enter-${i}`, (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          link.click();
+        }
+      });
     }
   });
 }
 
-export function apply() {
-  const cleanups = [];
-
-  const setup = (widget) => {
-    remediateBreadcrumb(widget);
-
-    const stop = observeChanges(widget, () => {
-      remediateBreadcrumb(widget);
-    });
-    cleanups.push(stop);
-  };
-
-  const stopWatching = onElementAdded('.breadcrumb-widget', setup);
-  cleanups.push(stopWatching);
-
-  return () => cleanups.forEach((fn) => fn());
-}
+export const apply = createFix('.breadcrumb-widget', remediateBreadcrumb);

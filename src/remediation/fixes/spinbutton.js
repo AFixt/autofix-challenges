@@ -24,10 +24,10 @@
  *   decrement (first); this convention may not hold for all implementations
  */
 
-import { setRole, setAria, setTabIndex, ensureId, labelledBy } from '../lib/aria.js';
-import { makeClickable, onKeyDown } from '../lib/keyboard.js';
+import { setRole, setAria, setTabIndex, ensureId, labelledBy, dispatchChange } from '../lib/aria.js';
+import { buttonify, onKeyDown } from '../lib/keyboard.js';
 import { queryAll } from '../lib/dom.js';
-import { observeChanges, onElementAdded } from '../lib/observer.js';
+import { createFix } from '../lib/fixFactory.js';
 
 function parseValue(el) {
   if (el.dataset.value !== undefined) return parseFloat(el.dataset.value);
@@ -102,20 +102,12 @@ function remediateSpinbutton(widget) {
         setAria(spinInput, 'valuetext', String(newValue));
         spinInput.dataset.value = String(newValue);
 
-        spinInput.dispatchEvent(new CustomEvent('spin-change', {
-          bubbles: true,
-          detail: { value: newValue },
-        }));
+        dispatchChange(spinInput, 'spin-change', { value: newValue });
       });
     }
 
     spinButtons.forEach((btn, bi) => {
-      const tag = btn.tagName.toLowerCase();
-      if (tag !== 'button') {
-        setRole(btn, 'button');
-        setTabIndex(btn, 0);
-        makeClickable(btn, `spin-btn-${ci}-${bi}`);
-      }
+      buttonify(btn, `spin-btn-${ci}-${bi}`);
 
       if (!btn.getAttribute('aria-label')) {
         // First button is decrement, last is increment by convention
@@ -127,20 +119,4 @@ function remediateSpinbutton(widget) {
   });
 }
 
-export function apply() {
-  const cleanups = [];
-
-  const setup = (widget) => {
-    remediateSpinbutton(widget);
-
-    const stop = observeChanges(widget, () => {
-      remediateSpinbutton(widget);
-    });
-    cleanups.push(stop);
-  };
-
-  const stopWatching = onElementAdded('.spin-widget', setup);
-  cleanups.push(stopWatching);
-
-  return () => cleanups.forEach((fn) => fn());
-}
+export const apply = createFix('.spin-widget', remediateSpinbutton);

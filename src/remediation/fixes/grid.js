@@ -10,6 +10,8 @@
  * - Add aria-selected to cells/rows when selected
  * - Add arrow key navigation (Up/Down/Left/Right) between grid cells
  * - Add Home/End for start/end of row; Ctrl+Home/Ctrl+End for grid bounds
+ * - Add aria-label to .priority-dot elements so priority is not conveyed
+ *   by color alone
  *
  * Limitations discovered:
  * - Two-dimensional arrow navigation requires rebuilding the cell matrix on
@@ -20,13 +22,15 @@
  *   without access to sort state; left unset to avoid incorrect values
  * - Ctrl+Home/End is a common grid pattern but may conflict with browser
  *   shortcuts on some platforms
+ * - Priority dot labels are inferred from CSS class names (e.g. priority-high);
+ *   if class naming changes, the label extraction will fall back to generic text
  */
 
-import { setRole, setAria, setTabIndex, ensureId } from '../lib/aria.js';
+import { setRole, setAria, ensureId } from '../lib/aria.js';
 import { onKeyDown } from '../lib/keyboard.js';
 import { rovingTabIndex } from '../lib/focus.js';
 import { queryAll } from '../lib/dom.js';
-import { observeChanges, onElementAdded } from '../lib/observer.js';
+import { createFix } from '../lib/fixFactory.js';
 
 function buildCellMatrix(widget) {
   const rows = queryAll('.grid-header-row, .grid-row', widget);
@@ -65,6 +69,15 @@ function remediateGrid(widget) {
     cells.forEach((cell, ci) => {
       setRole(cell, 'gridcell');
       ensureId(cell, `grid-cell-${ri}-${ci}`);
+
+      // Label color-only priority dots
+      const priorityDot = cell.querySelector('.priority-dot');
+      if (priorityDot) {
+        const classes = Array.from(priorityDot.classList);
+        const priorityClass = classes.find((c) => c.startsWith('priority-') && c !== 'priority-dot');
+        const priority = priorityClass ? priorityClass.replace('priority-', '') : 'unknown';
+        setAria(priorityDot, 'label', `Priority: ${priority}`);
+      }
     });
   });
 
@@ -140,20 +153,4 @@ function remediateGrid(widget) {
   }
 }
 
-export function apply() {
-  const cleanups = [];
-
-  const setup = (widget) => {
-    remediateGrid(widget);
-
-    const stop = observeChanges(widget, () => {
-      remediateGrid(widget);
-    });
-    cleanups.push(stop);
-  };
-
-  const stopWatching = onElementAdded('.grid-widget', setup);
-  cleanups.push(stopWatching);
-
-  return () => cleanups.forEach((fn) => fn());
-}
+export const apply = createFix('.grid-widget', remediateGrid);

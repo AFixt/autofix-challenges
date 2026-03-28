@@ -23,9 +23,9 @@
  */
 
 import { setRole, setAria, ensureId, controls, labelledBy } from '../lib/aria.js';
-import { onKeyDown, makeClickable, arrowNavigation } from '../lib/keyboard.js';
+import { buttonify, arrowNavigation } from '../lib/keyboard.js';
 import { queryAll } from '../lib/dom.js';
-import { observeChanges, onElementAdded } from '../lib/observer.js';
+import { createFix } from '../lib/fixFactory.js';
 
 function remediateAccordion(widget) {
   const items = queryAll('.accordion-item', widget);
@@ -38,9 +38,7 @@ function remediateAccordion(widget) {
     if (!header) return;
 
     // Make header act as a heading with a button inside
-    setRole(header, 'button');
-    header.tabIndex = 0;
-    makeClickable(header, `accordion-header-${i}`);
+    buttonify(header, `accordion-header-${i}`);
 
     // Wrap in heading role at the parent level
     if (question) {
@@ -55,7 +53,7 @@ function remediateAccordion(widget) {
 
     // Link to panel if it exists
     if (panel) {
-      const panelId = ensureId(panel, 'accordion-panel');
+      ensureId(panel, 'accordion-panel');
       controls(header, panel);
       setRole(panel, 'region');
       labelledBy(panel, header);
@@ -77,20 +75,4 @@ function remediateAccordion(widget) {
   }
 }
 
-export function apply() {
-  const cleanups = [];
-
-  const setup = (widget) => {
-    remediateAccordion(widget);
-
-    const stop = observeChanges(widget, () => {
-      remediateAccordion(widget);
-    });
-    cleanups.push(stop);
-  };
-
-  const stopWatching = onElementAdded('.accordion-widget', setup);
-  cleanups.push(stopWatching);
-
-  return () => cleanups.forEach((fn) => fn());
-}
+export const apply = createFix('.accordion-widget', remediateAccordion);

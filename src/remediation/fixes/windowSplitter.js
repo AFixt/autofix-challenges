@@ -27,7 +27,7 @@
 import { setRole, setAria, setTabIndex, ensureId } from '../lib/aria.js';
 import { onKeyDown } from '../lib/keyboard.js';
 import { queryAll } from '../lib/dom.js';
-import { observeChanges, onElementAdded } from '../lib/observer.js';
+import { createFix } from '../lib/fixFactory.js';
 
 function getSplitterValue(divider, container) {
   if (divider.dataset.value !== undefined) {
@@ -140,20 +140,4 @@ function remediateSplitter(widget) {
   });
 }
 
-export function apply() {
-  const cleanups = [];
-
-  const setup = (widget) => {
-    remediateSplitter(widget);
-
-    const stop = observeChanges(widget, () => {
-      remediateSplitter(widget);
-    });
-    cleanups.push(stop);
-  };
-
-  const stopWatching = onElementAdded('.splitter-widget', setup);
-  cleanups.push(stopWatching);
-
-  return () => cleanups.forEach((fn) => fn());
-}
+export const apply = createFix('.splitter-widget', remediateSplitter);
