@@ -1,0 +1,152 @@
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Navigation */
+.app-nav {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  padding: 0 24px;
+  height: 56px;
+  background: #111827;
+  color: white;
+  font-size: 14px;
+}
+
+.nav-brand {
+  font-weight: 700;
+  font-size: 16px;
+  color: white;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.nav-links {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  flex: 1;
+}
+
+.remediation-toggle {
+  flex-shrink: 0;
+  padding: 6px 16px;
+  border: 1px solid #6b7280;
+  border-radius: 6px;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.remediation-toggle:hover {
+  border-color: #9ca3af;
+  color: white;
+}
+
+.remediation-toggle.on {
+  background: #059669;
+  border-color: #059669;
+  color: white;
+}
+
+.remediation-toggle.on:hover {
+  background: #047857;
+  border-color: #047857;
+}
+
+.nav-link {
+  color: #9ca3af;
+  text-decoration: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.nav-link:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.nav-link.active {
+  color: white;
+  background: #4f46e5;
+}
+
+/* Main content */
+.app-main {
+  flex: 1;
+  padding: 32px 24px 64px;
+  max-width: 1000px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.demo-header h1 {
+  font-size: 28px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 32px;
+}
+
+/* Home page */
+.home {
+  text-align: center;
+}
+
+.home h1 {
+  font-size: 36px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 12px;
+}
+
+.home-desc {
+  font-size: 16px;
+  color: #6b7280;
+  margin: 0 0 40px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.demo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+  text-align: left;
+}
+
+.demo-card {
+  display: block;
+  padding: 24px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.demo-card:hover {
+  border-color: #4f46e5;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.1);
+}
+
+.demo-card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 8px;
+}
+
+.demo-card-link {
+  font-size: 14px;
+  color: #4f46e5;
+}

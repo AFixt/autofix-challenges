@@ -1,0 +1,31 @@
+.tooltip-widget { max-width: 550px; margin: 0 auto; }
+.tip-section { margin-bottom: 32px; }
+.tip-section-title { font-size: 14px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+
+.tip-trigger { position: relative; display: inline-block; }
+
+.tip-popup {
+  position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+  background: #111827; color: white; padding: 6px 12px; border-radius: 6px;
+  font-size: 13px; white-space: nowrap; z-index: 100; pointer-events: none;
+}
+
+.tip-row { display: flex; gap: 16px; }
+
+.tip-icon-btn {
+  width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+  background: #f3f4f6; border-radius: 8px; cursor: pointer; font-size: 18px;
+}
+.tip-icon-btn:hover { background: #e5e7eb; }
+
+.tip-paragraph { font-size: 15px; color: #374151; line-height: 1.8; }
+.tip-term { color: #4f46e5; cursor: help; border-bottom: 1px dashed #4f46e5; }
+
+.tip-form-field { max-width: 300px; }
+.tip-form-label { font-size: 14px; font-weight: 500; color: #374151; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+.tip-help-icon { color: #9ca3af; cursor: help; font-size: 16px; }
+.tip-form-input {
+  width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px;
+  font-size: 14px; box-sizing: border-box;
+}
+.tip-form-input:focus { outline: 2px solid #4f46e5; border-color: transparent; }

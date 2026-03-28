@@ -1,0 +1,67 @@
+.tree-widget {
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.tree-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.tree-container {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px 0;
+  background: white;
+  font-family: ui-monospace, Consolas, 'Courier New', monospace;
+  font-size: 14px;
+}
+
+.tree-node-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  cursor: default;
+  user-select: none;
+  transition: background 0.1s;
+}
+
+.tree-node-content:hover {
+  background: #f3f4f6;
+}
+
+.tree-chevron {
+  font-size: 10px;
+  color: #9ca3af;
+  transition: transform 0.15s;
+  width: 14px;
+  text-align: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.tree-chevron.expanded {
+  transform: rotate(90deg);
+}
+
+.tree-chevron-spacer {
+  width: 14px;
+  flex-shrink: 0;
+}
+
+.tree-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.tree-label {
+  color: #374151;
+}
+
+.tree-children {
+  /* No additional indentation styles needed - handled by inline paddingLeft */
+}

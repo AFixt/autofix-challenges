@@ -1,0 +1,30 @@
+.radio-widget { max-width: 500px; margin: 0 auto; }
+.radio-section { margin-bottom: 32px; }
+.radio-group-title { font-size: 16px; font-weight: 600; color: #111827; margin-bottom: 12px; }
+
+.radio-group { display: flex; flex-direction: column; gap: 10px; }
+.radio-group.horizontal { flex-direction: row; }
+
+.radio-option {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 16px; border: 2px solid #e5e7eb; border-radius: 10px;
+  cursor: pointer; transition: all 0.15s;
+}
+.radio-option:hover { border-color: #c7d2fe; }
+.radio-option.selected { border-color: #4f46e5; background: #eef2ff; }
+.radio-option.compact { align-items: center; padding: 12px 16px; flex: 1; }
+
+.radio-circle {
+  width: 20px; height: 20px; border: 2px solid #d1d5db;
+  border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; flex-shrink: 0; margin-top: 2px;
+  transition: border-color 0.15s;
+}
+.radio-circle.checked { border-color: #4f46e5; }
+.radio-dot { width: 10px; height: 10px; border-radius: 50%; background: #4f46e5; }
+
+.radio-content { flex: 1; }
+.radio-label-row { display: flex; justify-content: space-between; align-items: center; }
+.radio-name { font-size: 15px; font-weight: 500; color: #111827; }
+.radio-price { font-size: 15px; font-weight: 600; color: #4f46e5; }
+.radio-desc { font-size: 13px; color: #6b7280; margin-top: 4px; }

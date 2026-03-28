@@ -1,0 +1,24 @@
+.link-widget { max-width: 600px; margin: 0 auto; }
+.link-section { margin-bottom: 32px; }
+.link-section-title { font-size: 14px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+
+.link-paragraph { color: #374151; line-height: 1.8; font-size: 15px; }
+
+.fake-link { color: #4f46e5; cursor: pointer; }
+.fake-link:hover { color: #4338ca; }
+.fake-link.external::after { content: ' ↗'; font-size: 12px; }
+
+.link-list { display: flex; flex-direction: column; gap: 8px; }
+
+.image-links { display: flex; gap: 16px; }
+.image-link { cursor: pointer; border-radius: 8px; overflow: hidden; }
+.image-link-img { width: 120px; height: 80px; }
+
+.card-links { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.card-link {
+  padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px;
+  cursor: pointer; transition: all 0.2s;
+}
+.card-link:hover { border-color: #4f46e5; box-shadow: 0 4px 12px rgba(79,70,229,0.1); }
+.card-link-title { font-size: 16px; font-weight: 600; color: #111827; margin-bottom: 4px; }
+.card-link-desc { font-size: 14px; color: #6b7280; }

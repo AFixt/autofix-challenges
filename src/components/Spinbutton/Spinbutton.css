@@ -1,0 +1,27 @@
+.spin-widget { max-width: 400px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+.spin-card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; }
+
+.spin-product { font-size: 16px; font-weight: 600; color: #111827; }
+.spin-price { font-size: 18px; font-weight: 700; color: #4f46e5; margin: 4px 0 16px; }
+
+.spin-control { margin-top: 8px; }
+.spin-label { font-size: 13px; font-weight: 500; color: #6b7280; margin-bottom: 8px; }
+
+.spin-input {
+  display: inline-flex; align-items: center; border: 1px solid #e5e7eb;
+  border-radius: 8px; overflow: hidden;
+}
+
+.spin-btn {
+  width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+  font-size: 18px; color: #374151; cursor: pointer; background: #f9fafb;
+  user-select: none;
+}
+.spin-btn:hover { background: #e5e7eb; }
+
+.spin-value {
+  width: 56px; height: 40px; display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 600; color: #111827;
+  border-left: 1px solid #e5e7eb; border-right: 1px solid #e5e7eb;
+}

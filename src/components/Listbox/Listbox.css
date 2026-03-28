@@ -1,0 +1,26 @@
+.listbox-widget { max-width: 400px; margin: 0 auto; }
+.listbox-label-text { font-size: 14px; font-weight: 500; color: #374151; margin-bottom: 6px; }
+.listbox-wrapper { position: relative; }
+
+.listbox-trigger {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 8px;
+  cursor: pointer; background: white; font-size: 14px; color: #374151;
+}
+.listbox-trigger:hover { border-color: #9ca3af; }
+.listbox-arrow { color: #9ca3af; font-size: 14px; }
+
+.listbox-dropdown {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+  border: 1px solid #e5e7eb; border-radius: 8px; background: white;
+  max-height: 280px; overflow-y: auto; z-index: 100;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.listbox-option {
+  padding: 10px 14px; font-size: 14px; color: #374151;
+  cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+}
+.listbox-option:hover, .listbox-option.highlighted { background: #f3f4f6; }
+.listbox-option.selected { color: #4f46e5; font-weight: 500; }
+.listbox-check { color: #4f46e5; }
