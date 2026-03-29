@@ -102,17 +102,6 @@ export default function App() {
     <div className="app">
       <nav className="app-nav">
         <Link to="/" className="nav-brand">A11y Challenges</Link>
-        <div className="nav-links">
-          {demos.map((demo) => (
-            <Link
-              key={demo.path}
-              to={demo.path}
-              className={`nav-link ${location.pathname === demo.path ? 'active' : ''}`}
-            >
-              {demo.label}
-            </Link>
-          ))}
-        </div>
         <button
           className={`remediation-toggle ${remediationOn ? 'on' : ''}`}
           onClick={handleToggleRemediation}
@@ -125,6 +114,7 @@ export default function App() {
       <main className="app-main">
         {currentDemo && (
           <div className="demo-header">
+            <Link to="/" className="back-link">← Back to all components</Link>
             <h1>{currentDemo.label}</h1>
           </div>
         )}

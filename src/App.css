@@ -97,6 +97,18 @@
   margin: 0 0 32px;
 }
 
+.back-link {
+  display: inline-block;
+  font-size: 14px;
+  color: #4f46e5;
+  text-decoration: none;
+  margin-bottom: 8px;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
+
 /* Home page */
 .home {
   text-align: center;
