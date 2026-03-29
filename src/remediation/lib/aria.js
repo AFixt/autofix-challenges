@@ -147,12 +147,3 @@ export function extractValue(el, cssProp, defaultValue = 0) {
 
   return defaultValue;
 }
-
-/**
- * Dispatch a custom event as a workaround for notifying components
- * of value changes when React state cannot be modified directly.
- */
-export function dispatchChange(el, eventName, detail = {}) {
-  if (!el) return;
-  el.dispatchEvent(new CustomEvent(eventName, { bubbles: true, detail }));
-}

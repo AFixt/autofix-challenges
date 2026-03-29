@@ -13,6 +13,12 @@
  * - Constrain min thumb to not exceed max thumb value and vice versa
  *
  * Limitations discovered:
+ * - Keyboard value changes are applied by simulating a mousedown on the
+ *   thumb at the calculated pixel position for the new value. This triggers
+ *   the component's real mouse handler and updates React state, but it
+ *   couples the fix to the component's mouse-based interaction model and
+ *   layout math. If the component switches to pointer events or changes
+ *   its position calculation, the simulation breaks silently.
  * - Constraining thumb values requires knowing both thumb positions at keypress
  *   time; if React updates positions asynchronously the constraint check may
  *   use stale values
@@ -24,9 +30,9 @@
  *   dynamic approach
  */
 
-import { setRole, setAria, setTabIndex, ensureId, extractValue, dispatchChange } from '../lib/aria.js';
+import { setRole, setAria, setTabIndex, ensureId, extractValue } from '../lib/aria.js';
 import { onKeyDown } from '../lib/keyboard.js';
-import { queryAll } from '../lib/dom.js';
+import { queryAll, simulateMouseEvent, valueToClientX } from '../lib/dom.js';
 import { createFix } from '../lib/fixFactory.js';
 
 function remediateMultiThumbSlider(widget) {
@@ -112,11 +118,16 @@ function remediateMultiThumbSlider(widget) {
             return;
         }
 
-        setAria(thumb, 'valuenow', String(newValue));
-        setAria(thumb, 'valuetext', String(newValue));
-        thumb.dataset.value = String(newValue);
-
-        dispatchChange(thumb, 'mts-change', { value: newValue, index: ti });
+        // Simulate a mousedown on the thumb at the position corresponding to
+        // the new value. The component's makeHandler calls update(e) immediately,
+        // which reads clientX to compute the new value and calls the React
+        // setter — updating real component state.
+        if (track) {
+          const clientX = valueToClientX(track, newValue, min, max);
+          const rect = track.getBoundingClientRect();
+          simulateMouseEvent(thumb, 'mousedown', clientX, rect.top + rect.height / 2);
+          simulateMouseEvent(document, 'mouseup', clientX, rect.top + rect.height / 2);
+        }
       });
     });
   });

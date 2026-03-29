@@ -14,9 +14,11 @@
  * - Add Home/End to jump to min/max values
  *
  * Limitations discovered:
- * - The spin-input element may be a read-only text display rather than a real
- *   <input type="number">; keyboard events on it dispatch custom events rather
- *   than modifying the input value directly
+ * - Keyboard value changes are applied by simulating clicks on the
+ *   increment/decrement buttons. This triggers the component's real onClick
+ *   handlers and updates React state, but for multi-step changes (Page Up/Down,
+ *   Home/End) multiple clicks must be simulated in sequence, and the fix is
+ *   coupled to the button ordering convention (first = decrement, last = increment).
  * - aria-valuenow is read from the text content or data attribute; if the
  *   component renders a formatted string (e.g. "5 kg"), the numeric extraction
  *   may be imprecise
@@ -24,7 +26,7 @@
  *   decrement (first); this convention may not hold for all implementations
  */
 
-import { setRole, setAria, setTabIndex, ensureId, labelledBy, dispatchChange } from '../lib/aria.js';
+import { setRole, setAria, setTabIndex, ensureId, labelledBy } from '../lib/aria.js';
 import { buttonify, onKeyDown } from '../lib/keyboard.js';
 import { queryAll } from '../lib/dom.js';
 import { createFix } from '../lib/fixFactory.js';
@@ -67,42 +69,62 @@ function remediateSpinbutton(widget) {
         labelledBy(spinInput, spinLabel);
       }
 
+      // Identify increment/decrement buttons by convention: first = dec, last = inc
+      const decBtn = spinButtons.length > 1 ? spinButtons[0] : null;
+      const incBtn = spinButtons.length > 0 ? spinButtons[spinButtons.length - 1] : null;
+
       onKeyDown(spinInput, `spin-input-keys-${ci}`, (e) => {
-        let newValue = parseValue(spinInput);
+        const currentValue = parseValue(spinInput);
         const largeStep = Math.max(step * 10, Math.round((max - min) * 0.1));
+        let clicks = 0;
+        let btn = null;
 
         switch (e.key) {
           case 'ArrowUp':
             e.preventDefault();
-            newValue = isFinite(max) ? Math.min(max, newValue + step) : newValue + step;
+            btn = incBtn;
+            clicks = 1;
             break;
           case 'ArrowDown':
             e.preventDefault();
-            newValue = isFinite(min) ? Math.max(min, newValue - step) : newValue - step;
+            btn = decBtn;
+            clicks = 1;
             break;
           case 'PageUp':
             e.preventDefault();
-            newValue = isFinite(max) ? Math.min(max, newValue + largeStep) : newValue + largeStep;
+            btn = incBtn;
+            clicks = Math.round(largeStep / step);
             break;
           case 'PageDown':
             e.preventDefault();
-            newValue = isFinite(min) ? Math.max(min, newValue - largeStep) : newValue - largeStep;
+            btn = decBtn;
+            clicks = Math.round(largeStep / step);
             break;
           case 'Home':
-            if (isFinite(min)) { e.preventDefault(); newValue = min; }
+            if (isFinite(min)) {
+              e.preventDefault();
+              btn = decBtn;
+              clicks = Math.round((currentValue - min) / step);
+            }
             break;
           case 'End':
-            if (isFinite(max)) { e.preventDefault(); newValue = max; }
+            if (isFinite(max)) {
+              e.preventDefault();
+              btn = incBtn;
+              clicks = Math.round((max - currentValue) / step);
+            }
             break;
           default:
             return;
         }
 
-        setAria(spinInput, 'valuenow', String(newValue));
-        setAria(spinInput, 'valuetext', String(newValue));
-        spinInput.dataset.value = String(newValue);
-
-        dispatchChange(spinInput, 'spin-change', { value: newValue });
+        // Simulate clicks on the real increment/decrement buttons to
+        // trigger React's onClick handlers and update component state.
+        if (btn && clicks > 0) {
+          for (let i = 0; i < clicks; i++) {
+            btn.click();
+          }
+        }
       });
     }
 

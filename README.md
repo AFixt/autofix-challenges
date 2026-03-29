@@ -74,27 +74,26 @@ Each fix module documents both the repairs attempted and the **limitations disco
 
 ## Key Findings
 
-The remediation layer encounters **21 categories of systemic failure** across the 292 issues:
+The remediation layer encounters **23 categories of systemic failure** across the 292 issues:
 
-**Structurally unfixable (7)** — Cannot be resolved without breaking React's DOM ownership:
+**Structurally unfixable (6)** — Cannot be resolved without breaking React's DOM ownership:
 
 - Non-semantic elements (`<div>`) cannot be replaced with semantic HTML (`<button>`, `<table>`, `<a>`, `<input>`)
 - Heading hierarchy cannot be injected into accordion/landmark patterns
-- Background content cannot be reliably marked `inert` behind modals
 - `scope` attributes are invalid on non-`<th>` elements
 - Color-only status indicators cannot be fixed for non-screenreader users without injecting visible DOM
 - Native `<label>` click-to-focus behavior cannot be replicated via `aria-labelledby`
 - `<a href>` behaviors (right-click menu, middle-click, visited state) cannot be replicated via `role="link"`
 
-**Functionally unfixable (4)** — Interaction patterns that cannot be implemented externally:
+**Functionally unfixable (3)** — Interaction patterns that cannot be implemented externally:
 
 - Type-ahead character navigation (trees, listboxes, menus)
 - Overlay click-to-close on modals
 - Auto-play pause control for carousels
-- Custom events dispatched by fixes are silently ignored by components
 
-**Unreliable / fragile (10)** — Implemented but dependent on assumptions that break silently:
+**Unreliable / fragile (14)** — Implemented but dependent on assumptions that break silently:
 
+- Simulated mouse events to add keyboard support to sliders/splitters (coupled to layout math and event types)
 - State inferred from CSS class names (`.active`, `.open`, `.checked`, `.expanded`)
 - Interactions triggered via simulated `.click()` calls
 - Sort state parsed from visual Unicode characters
@@ -104,7 +103,12 @@ The remediation layer encounters **21 categories of systemic failure** across th
 - Values extracted from CSS inline styles
 - Icon-only elements receive generic fallback labels
 - 2D grid navigation requires expensive matrix rebuilding per keystroke
+- Timestamp and value-text inference from visual cues
+- Focus management timing on disclosure content appearance
 - Live region announcement timing issues with dynamic content
+- Background `inert` marking behind modals (React reconciliation conflicts, stale restoration, nested modal interference)
+
+At the individual issue level: **36 issues (12%) cannot be fixed**, **123 issues (42%) are fixed but fragile**, and **133 issues (46%) are reasonably fixed**. Only 46% of the 292 issues are reliably remediated.
 
 The full analysis with evidence is in [LIMITATIONS.md](./LIMITATIONS.md).
 

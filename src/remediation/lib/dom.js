@@ -90,3 +90,39 @@ export function isVisible(el) {
   const style = window.getComputedStyle(el);
   return style.display !== 'none' && style.visibility !== 'hidden';
 }
+
+/**
+ * Simulate a mouse event on an element.
+ * Used to trigger React's mouse event handlers from keyboard remediation.
+ */
+export function simulateMouseEvent(target, type, clientX, clientY) {
+  const event = new MouseEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    clientX: clientX ?? 0,
+    clientY: clientY ?? 0,
+  });
+  target.dispatchEvent(event);
+}
+
+/**
+ * Simulate a complete mouse drag sequence: mousedown on the target,
+ * mousemove on the document at the given position, then mouseup.
+ * This triggers React handlers that attach document-level move/up listeners
+ * during mousedown.
+ */
+export function simulateDrag(target, clientX, clientY) {
+  simulateMouseEvent(target, 'mousedown', clientX, clientY);
+  simulateMouseEvent(document, 'mousemove', clientX, clientY);
+  simulateMouseEvent(document, 'mouseup', clientX, clientY);
+}
+
+/**
+ * Calculate the clientX position for a given value within an element's
+ * bounding rectangle, mapping a value in [min, max] to a pixel position.
+ */
+export function valueToClientX(trackEl, value, min, max) {
+  const rect = trackEl.getBoundingClientRect();
+  const ratio = (value - min) / (max - min);
+  return rect.left + ratio * rect.width;
+}

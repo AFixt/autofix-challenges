@@ -14,9 +14,12 @@
  * - Add Home/End to snap to minimum/maximum positions
  *
  * Limitations discovered:
- * - The actual panel sizes are controlled by React state; arrow key events
- *   dispatch a custom event and update aria-valuenow optimistically, but the
- *   component must listen for the custom event to actually resize panels
+ * - Keyboard value changes are applied by simulating a mousedown→mousemove→mouseup
+ *   drag sequence on the divider at the calculated pixel position for the new
+ *   split percentage. This triggers the component's real mouse handler and
+ *   updates React state, but it couples the fix to the component's mouse-based
+ *   interaction model. If the component switches to pointer events, changes its
+ *   position calculation, or restructures its DOM, the simulation breaks silently.
  * - aria-valuenow is inferred from the sidebar panel's current computed width
  *   as a percentage of the container width; this requires the container to have
  *   a non-zero width at remediation time
@@ -26,7 +29,7 @@
 
 import { setRole, setAria, setTabIndex, ensureId } from '../lib/aria.js';
 import { onKeyDown } from '../lib/keyboard.js';
-import { queryAll } from '../lib/dom.js';
+import { queryAll, simulateDrag } from '../lib/dom.js';
 import { createFix } from '../lib/fixFactory.js';
 
 function getSplitterValue(divider, container) {
@@ -127,14 +130,15 @@ function remediateSplitter(widget) {
       }
 
       if (newValue !== current) {
-        setAria(divider, 'valuenow', String(newValue));
-        setAria(divider, 'valuetext', `Sidebar ${newValue}% wide`);
-        divider.dataset.value = String(newValue);
-
-        divider.dispatchEvent(new CustomEvent('splitter-resize', {
-          bubbles: true,
-          detail: { value: newValue },
-        }));
+        // Simulate a full drag sequence (mousedown→mousemove→mouseup) on the
+        // divider at the pixel position corresponding to the new percentage.
+        // The component's handleMouseDown attaches document-level mousemove/mouseup
+        // listeners; the mousemove handler reads clientX relative to the container
+        // to compute the new split percentage and calls React's setSplitPct.
+        const containerRect = container.getBoundingClientRect();
+        const clientX = containerRect.left + (newValue / 100) * containerRect.width;
+        const clientY = containerRect.top + containerRect.height / 2;
+        simulateDrag(divider, clientX, clientY);
       }
     });
   });

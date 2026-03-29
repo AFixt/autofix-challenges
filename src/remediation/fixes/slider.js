@@ -14,9 +14,12 @@
  * - Add Page Up/Down for larger step increments (10% of range)
  *
  * Limitations discovered:
- * - The thumb position is set by the React component via inline style or
- *   a data attribute; arrow key events call click handlers which may not
- *   exist on the div — a custom event dispatch is used as a fallback
+ * - Keyboard value changes are applied by simulating a mousedown on the
+ *   slider track at the calculated pixel position for the new value. This
+ *   triggers the component's real mouse handler and updates React state,
+ *   but it couples the fix to the component's mouse-based interaction model
+ *   and layout math. If the component switches to pointer events or changes
+ *   its position calculation, the simulation breaks silently.
  * - aria-valuenow must stay in sync with the actual thumb position; this fix
  *   reads the value at remediation time but relies on MutationObserver to
  *   re-apply when the component updates the DOM
@@ -24,9 +27,9 @@
  *   match the application's defined large step
  */
 
-import { setRole, setAria, setTabIndex, ensureId, labelledBy, extractValue, dispatchChange } from '../lib/aria.js';
+import { setRole, setAria, setTabIndex, ensureId, labelledBy, extractValue } from '../lib/aria.js';
 import { onKeyDown } from '../lib/keyboard.js';
-import { queryAll } from '../lib/dom.js';
+import { queryAll, simulateMouseEvent, valueToClientX } from '../lib/dom.js';
 import { createFix } from '../lib/fixFactory.js';
 
 function remediateSlider(widget) {
@@ -98,15 +101,16 @@ function remediateSlider(widget) {
           return;
       }
 
-      // Update aria immediately for AT feedback
-      setAria(thumb, 'valuenow', String(newValue));
-      if (valueDisplay) {
-        setAria(thumb, 'valuetext', String(newValue));
+      // Simulate a mousedown on the track at the position corresponding to
+      // the new value. The component's handleMouseDown calls update(e)
+      // immediately, which reads clientX to compute the new value and calls
+      // React's onChange — updating real component state.
+      if (track) {
+        const clientX = valueToClientX(track, newValue, min, max);
+        const rect = track.getBoundingClientRect();
+        simulateMouseEvent(track, 'mousedown', clientX, rect.top + rect.height / 2);
+        simulateMouseEvent(document, 'mouseup', clientX, rect.top + rect.height / 2);
       }
-
-      // Attempt to notify React by dispatching a custom input event
-      thumb.dataset.value = String(newValue);
-      dispatchChange(thumb, 'slider-change', { value: newValue });
     });
   });
 }

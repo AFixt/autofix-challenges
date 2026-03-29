@@ -40,38 +40,25 @@ The accordion pattern requires headers (e.g., `<h3>`) wrapping trigger buttons. 
 
 The Landmarks component has no heading hierarchy (`<h1>`, `<h2>`, etc.) — only divs with CSS styling. The remediation applies `role="heading"` and `aria-level` to heading-like elements (`.lm-page-title`→level 1, `.lm-section-title`→level 2, `.lm-sidebar-title`→level 3), but these levels are guesses based on CSS class names — the correct levels depend on the page context which the remediation cannot know.
 
-### 3. Background content cannot be made inert
-
-**Affected:** Modal Dialog
-
-When the modal is open, background content should be marked `inert` or `aria-hidden="true"` to prevent screen reader users from navigating behind the modal. Doing this externally requires:
-
-- Identifying all sibling and ancestor-sibling nodes of the modal
-- Marking them all `inert` or `aria-hidden="true"`
-- Restoring them on close
-- Handling edge cases where the modal is not a top-level child of `<body>`
-
-This is fragile because it requires knowledge of the full page structure, and incorrectly marking elements can break the page or hide the modal itself.
-
-### 4. `scope` attributes cannot be applied to non-`<th>` elements
+### 3. `scope` attributes cannot be applied to non-`<th>` elements
 
 **Affected:** Sortable Table, Grid, Treegrid
 
 The `scope` attribute (`col`/`row`) is only valid on `<th>` elements. Since the table/grid/treegrid use divs, there is no way to establish the header/cell relationship that `scope` provides. ARIA alternatives (`aria-colindex`, `aria-rowindex`) are partial substitutes but require mapping indices to a data model the remediation layer does not have access to.
 
-### 5. Color-only indicators cannot be fully remediated
+### 4. Color-only indicators cannot be fully remediated
 
 **Affected:** Sortable Table, Grid, Meter, Alert, Carousel
 
 Status badges, priority dots, meter colors, and alert type indicators use color (or color plus ambiguous Unicode symbols) to differentiate states. The remediation adds `aria-label` text for screen reader users (e.g., Grid priority dots, Alert type icons, Sortable Table status badges, Carousel dots), but this does **not** help sighted users with color vision deficiency who do not use a screen reader. Fully fixing this requires injecting visible icons, patterns, or text — DOM changes that would break React's rendering. Additionally, the labels are inferred from CSS class names (e.g., `.priority-high`, `.alert-error`), so they break silently if classes change.
 
-### 6. Native `<label>` click-to-focus cannot be replicated
+### 5. Native `<label>` click-to-focus cannot be replicated
 
 **Affected:** Modal Dialog, Checkbox, Radio Group, Switch, Combobox, Slider, Multi-Thumb Slider, Spinbutton
 
 Input fields and custom controls are labeled via `aria-labelledby` pointing to `<div>` elements. This works for screen readers but does not provide click-to-focus behavior — clicking the label text does not focus the associated control, unlike a native `<label for="...">` element.
 
-### 7. Link behavior cannot be fully replicated with `role="link"`
+### 6. Link behavior cannot be fully replicated with `role="link"`
 
 **Affected:** Link, Breadcrumb
 
@@ -92,7 +79,7 @@ These are native `<a href>` behaviors that cannot be replicated via ARIA.
 
 These interaction patterns cannot be reliably implemented from outside the component.
 
-### 8. Type-ahead character navigation
+### 7. Type-ahead character navigation
 
 **Affected:** Tree View, Treegrid, Listbox, Combobox, Menu & Menubar
 
@@ -105,23 +92,17 @@ The WAI-ARIA patterns for trees, listboxes, menus, and comboboxes recommend type
 
 This is prohibitively complex to maintain from outside the component.
 
-### 9. Overlay click-to-close on the Modal Dialog
+### 8. Overlay click-to-close on the Modal Dialog
 
 **Affected:** Modal Dialog
 
 Clicking the overlay backdrop should close the modal. Adding a click listener externally would fire on all clicks including those inside the modal (event bubbling), and stopping propagation would interfere with React's synthetic event system.
 
-### 10. Auto-play pause control for Carousel
+### 9. Auto-play pause control for Carousel
 
 **Affected:** Carousel
 
 The carousel auto-rotates with no pause control. Adding a pause button requires injecting a new DOM element and managing React state — both impossible from outside. The WCAG requirement is that auto-playing content must be pausable, stoppable, or hideable. The remediation can add `aria-live` to announce slides, but this makes auto-play *noisier*, not better. The component should pause on focus, which cannot be enforced via attribute remediation.
-
-### 11. Custom events as workarounds for missing handlers
-
-**Affected:** Slider, Multi-Thumb Slider, Spinbutton, Window Splitter
-
-When components lack keyboard handlers, the remediation dispatches custom events (`slider-change`, `mts-change`, `spin-change`, `splitter-resize`) hoping the component listens. Since these are not standard React events and the component was not designed to receive them, they are silently ignored. The keyboard interaction appears to work (ARIA attributes update optimistically) but the component's actual state does not change — creating a disconnect between what assistive technology announces and what the user sees.
 
 ---
 
@@ -129,7 +110,20 @@ When components lack keyboard handlers, the remediation dispatches custom events
 
 These are technically implemented but depend on assumptions that can silently break.
 
-### 12. State detection via CSS class names
+### 10. Simulated mouse events for keyboard interaction
+
+**Affected:** Slider, Multi-Thumb Slider, Spinbutton, Window Splitter
+
+When components lack keyboard handlers, the remediation simulates mouse events to trigger the component's existing mouse-based interaction handlers. For sliders and the window splitter, this means dispatching `mousedown`/`mousemove`/`mouseup` events at calculated pixel positions corresponding to the desired value. For the spinbutton, the increment/decrement buttons are clicked programmatically.
+
+This successfully updates React state (unlike the previous approach of dispatching custom events that were silently ignored), but it is fragile:
+
+- The pixel position calculation is coupled to the component's layout and bounding rectangle math — if the track/container is not yet laid out or has zero width, the calculation produces incorrect values
+- If the component switches from `mousedown` to `pointerdown`, the simulation stops working silently
+- Multi-step spinbutton changes (Page Up/Down, Home/End) require multiple sequential `.click()` calls, which may cause visual jitter or be batched unexpectedly by React
+- The simulated events bypass the browser's trusted event chain — some components may check `event.isTrusted` and reject synthetic events
+
+### 11. State detection via CSS class names
 
 **Affected:** All components with toggleable/selectable state
 
@@ -156,7 +150,7 @@ Every fix infers component state by reading CSS classes:
 
 If any component is refactored to use different class names, inline styles, CSS-in-JS, or data attributes, the fix breaks silently — ARIA attributes will report incorrect state.
 
-### 13. Interaction via simulated clicks
+### 12. Interaction via simulated clicks
 
 **Affected:** Tab Panel, Accordion, Tree View, Treegrid, Listbox, Menu & Menubar, Menu Button, Carousel, Radio Group, Disclosure, Link, Switch, Modal Dialog
 
@@ -167,13 +161,13 @@ Arrow key navigation and keyboard activation work by calling `.click()` on DOM e
 - React's synthetic event system changes its delegation strategy
 - The component adds `preventDefault` or `stopPropagation`
 
-### 14. Sort state parsed from visual characters
+### 13. Sort state parsed from visual characters
 
 **Affected:** Sortable Table
 
 The fix reads `↑`, `↓`, `↕` characters from DOM text to determine sort direction. This breaks if the component changes to SVG icons, CSS pseudo-elements, or different characters.
 
-### 15. All ARIA attributes stripped on re-render
+### 14. All ARIA attributes stripped on re-render
 
 **Affected:** All 29 components
 
@@ -184,7 +178,7 @@ React re-renders replace DOM nodes or reset attributes to match the virtual DOM,
 - Rapid interactions produce announcement gaps
 - React batch updates may cause the observer to fire mid-batch with inconsistent DOM
 
-### 16. Conditional rendering breaks ARIA references
+### 15. Conditional rendering breaks ARIA references
 
 **Affected:** Tooltip, Disclosure, Combobox, Listbox, Menu & Menubar, Menu Button, Modal Dialog
 
@@ -196,13 +190,13 @@ When React conditionally renders content (mount/unmount rather than show/hide), 
 
 The fix sets these attributes when content appears, but there is always a timing gap between content rendering and attribute application.
 
-### 17. DOM nesting depth used to calculate tree levels
+### 16. DOM nesting depth used to calculate tree levels
 
 **Affected:** Tree View, Treegrid
 
 Tree depth is calculated by walking up the DOM counting wrapper elements. This couples the fix to the exact nesting structure. A refactor that flattens the DOM (virtual scrolling, CSS-grid-based layout) produces incorrect `aria-level` values.
 
-### 18. Value extraction from CSS inline styles
+### 17. Value extraction from CSS inline styles
 
 **Affected:** Meter, Slider, Multi-Thumb Slider, Window Splitter
 
@@ -214,19 +208,19 @@ Values are inferred from computed CSS properties:
 
 If width is set via classes, CSS variables, transforms, or any method other than inline `width`/`left` styles, extraction fails silently and values default to 0 or are omitted entirely.
 
-### 19. Label extraction for icon-only elements
+### 18. Label extraction for icon-only elements
 
 **Affected:** Button, Toolbar, Menu Button, Tooltip, Link, Carousel
 
 Icon-only buttons and image links have no text content. The fix attempts to derive labels from `title`, `data-label`, `alt` attributes, or emoji/text content. When none exist, generic fallbacks like "Button", "Menu", "Link" are used — providing technically compliant but unhelpful labels. Toolbar icon detection uses a Unicode/emoji regex pattern that may misclassify short text labels as icons.
 
-### 20. Two-dimensional navigation matrix cost
+### 19. Two-dimensional navigation matrix cost
 
 **Affected:** Grid, Treegrid
 
 Cell-by-cell arrow key navigation requires building a row/column matrix from the DOM on every keystroke and every re-render. This is O(rows × columns) per operation. In large grids, this adds perceptible latency. React may also reorder cells during state changes, causing the matrix to be inconsistent for the duration of a render cycle.
 
-### 21. Timestamp and value-text inference
+### 20. Timestamp and value-text inference
 
 **Affected:** Feed, Meter
 
@@ -237,13 +231,13 @@ Human-readable text is inferred from visual cues:
 
 Both rely on assumptions about how the component formats its display values. If the format changes, the inference produces incorrect or misleading accessible text.
 
-### 22. Focus management on content appearance
+### 21. Focus management on content appearance
 
 **Affected:** Disclosure
 
 When a disclosure panel is expanded, the remediation moves focus into the revealed content so keyboard users know new content has appeared. This uses `requestAnimationFrame` to wait for React to render the panel, which is inherently timing-dependent — on slow devices the panel may not yet be in the DOM when focus is attempted, causing a silent failure. Additionally, moving focus on expand but not on collapse creates an asymmetric interaction that may surprise some users.
 
-### 23. Screen reader announcement timing
+### 22. Screen reader announcement timing
 
 **Affected:** Alert, Carousel, Feed, Sortable Table
 
@@ -254,18 +248,41 @@ Dynamic announcements via `aria-live` regions have timing constraints:
 - **Feed:** `aria-setsize` set to `-1` (unknown) for lazy-loaded feeds; screen readers cannot tell users how many items exist
 - **Sortable Table:** Sort announcement uses double `requestAnimationFrame` to wait for React to update DOM — fragile timing that may miss on slow devices
 
+### 23. Background inert marking is fragile
+
+**Affected:** Modal Dialog
+
+When the modal is open, background content should be marked `inert` or `aria-hidden="true"` to prevent screen reader users from navigating behind the modal. The algorithm itself is straightforward — walk up from the modal to `<body>`, marking all sibling branches as `inert`, then reverse on close. However, doing this externally is fragile:
+
+- **React reconciliation conflicts:** React owns the DOM. If React re-renders a subtree that has been marked `inert`, it may remove the attribute. A MutationObserver can re-apply it, but this creates a race condition and adds runtime overhead.
+- **Modal placement is unpredictable:** If the modal is deeply nested (rather than portaled to `<body>`), the tree-walk must navigate a complex structure. If React moves the modal in the DOM during a re-render, the inert markers may hide the modal itself or miss new content.
+- **Stale restoration:** The original state must be restored on close. If the DOM changed while the modal was open (async content loaded, route change, dynamic insertions), the saved state is stale and elements may be left permanently inert.
+- **Multiple modals / nested dialogs:** If another script opens a second modal, or if elements already have `aria-hidden` for other reasons, blindly toggling these attributes can break other components.
+
 ---
 
 ## Summary
 
 | Category | Count | Issues |
 |----------|-------|--------|
-| Structurally unfixable | 7 | Semantic elements, headings, inert, scope, color-only indicators, label click-to-focus, link behavior |
-| Functionally unfixable | 4 | Type-ahead, overlay close, auto-play pause, custom events ignored |
-| Unreliable / fragile | 12 | Class detection, simulated clicks, character parsing, re-render stripping, conditional rendering, nesting depth, CSS value extraction, icon labels, 2D navigation cost, timestamp/value inference, disclosure focus management, announcement timing |
+| Structurally unfixable | 6 | Semantic elements, headings, scope, color-only indicators, label click-to-focus, link behavior |
+| Functionally unfixable | 3 | Type-ahead, overlay close, auto-play pause |
+| Unreliable / fragile | 14 | Simulated mouse events, class detection, simulated clicks, character parsing, re-render stripping, conditional rendering, nesting depth, CSS value extraction, icon labels, 2D navigation cost, timestamp/value inference, disclosure focus management, announcement timing, background inert marking |
 | **Total** | **23** | |
 
-Across all 29 components, there are **292 intentional accessibility issues**. Of these, the 23 categories above represent systemic problems that affect most or all components. The fixes that *do* work require continuous re-application via MutationObserver, adding runtime overhead and an inherent brittleness that does not exist when accessibility is built into the component source.
+Across all 29 components, there are **292 intentional accessibility issues**. Of these, the 23 categories above represent systemic problems that affect most or all components.
+
+### Issue-level breakdown
+
+Mapping each of the 292 individual issues to the categories above:
+
+| Outcome | Issues | % | Description |
+|---------|--------|---|-------------|
+| Cannot be fixed | 36 | 12% | Blocked by structural or functional constraints — no post-render approach can resolve these |
+| Fixed but fragile | 123 | 42% | Technically implemented but dependent on CSS class names, simulated events, layout math, or timing that can break silently |
+| Reasonably fixed | 133 | 46% | ARIA attributes, tabindex, keyboard handlers, and labels that work reliably within the post-render constraint model |
+
+**Only 46% of issues are reliably remediated.** The remaining 54% are either impossible to fix (12%) or depend on assumptions that break silently when the component is refactored, restyled, or re-rendered (42%). The fixes that *do* work require continuous re-application via MutationObserver, adding runtime overhead and an inherent brittleness that does not exist when accessibility is built into the component source.
 
 ### The fundamental constraint
 
@@ -276,5 +293,7 @@ Post-render remediation is working against the framework, not with it. React (an
 3. **State is opaque.** The fix cannot read React state; it must reverse-engineer state from CSS classes and DOM structure.
 4. **Events are synthetic.** The fix cannot trigger React state updates directly; it must simulate clicks and hope the component responds.
 5. **Timing is adversarial.** There is always a gap between a DOM change and the fix re-applying, during which assistive technology sees stale or missing information.
+
+These problems are compounded when content changes asynchronously (XHR responses, WebSocket updates, polling). The remediation layer has no awareness of pending data fetches — it can only react after the DOM has already changed, widening the gap during which assistive technology sees un-remediated content. User-initiated changes at least follow a predictable interaction→render cycle; server-driven updates arrive at arbitrary times, making the MutationObserver's debounce window a more frequent source of stale or missing announcements.
 
 These are not implementation bugs — they are inherent limitations of the overlay approach. No amount of engineering can fully overcome them.
