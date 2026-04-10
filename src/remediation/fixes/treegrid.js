@@ -84,7 +84,7 @@ function remediateTreegrid(widget) {
     const hasChildren = row.dataset.hasChildren === 'true' || !!chevron;
 
     if (hasChildren) {
-      const isExpanded = row.classList.contains('expanded') ||
+      const isExpanded = (chevron && chevron.classList.contains('open')) ||
         row.dataset.expanded === 'true';
       setAria(row, 'expanded', String(isExpanded));
     }

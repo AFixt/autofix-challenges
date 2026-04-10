@@ -142,9 +142,9 @@ Every fix infers component state by reading CSS classes:
 | Toolbar | `.active` | Toggle pressed |
 | Carousel | `.active` | Current dot |
 | Combobox | `.highlighted`, `.selected` | Active option |
-| Listbox | `.selected`, `.highlighted` | Active option |
+| Listbox | `.selected` | Selected option |
 | Disclosure | DOM presence | Expanded content |
-| Treegrid | `.open` | Expanded row |
+| Treegrid | `.open` (on chevron) | Expanded row |
 | Alert | `.alert-success`, `.alert-error`, etc. | Alert type |
 | Grid | `.priority-high`, `.priority-low`, etc. | Priority level |
 
@@ -248,16 +248,20 @@ Dynamic announcements via `aria-live` regions have timing constraints:
 - **Feed:** `aria-setsize` set to `-1` (unknown) for lazy-loaded feeds; screen readers cannot tell users how many items exist
 - **Sortable Table:** Sort announcement uses double `requestAnimationFrame` to wait for React to update DOM — fragile timing that may miss on slow devices
 
-### 23. Background inert marking is fragile
+### 23. Background content is not hidden from screen readers
 
 **Affected:** Modal Dialog
 
-When the modal is open, background content should be marked `inert` or `aria-hidden="true"` to prevent screen reader users from navigating behind the modal. The algorithm itself is straightforward — walk up from the modal to `<body>`, marking all sibling branches as `inert`, then reverse on close. However, doing this externally is fragile:
+When the modal is open, background content should be marked `inert` or `aria-hidden="true"` to prevent screen reader users from navigating behind the modal. The fix sets `aria-modal="true"` on the dialog container, which signals to screen readers that they should restrict navigation to the modal. However, `aria-modal` support is inconsistent — older browser/AT combinations ignore it entirely, allowing users to navigate into background content.
+
+The more robust approach would be to walk up from the modal to `<body>`, marking all sibling branches as `inert`, then reverse on close. This was not implemented because doing it externally is prohibitively fragile:
 
 - **React reconciliation conflicts:** React owns the DOM. If React re-renders a subtree that has been marked `inert`, it may remove the attribute. A MutationObserver can re-apply it, but this creates a race condition and adds runtime overhead.
 - **Modal placement is unpredictable:** If the modal is deeply nested (rather than portaled to `<body>`), the tree-walk must navigate a complex structure. If React moves the modal in the DOM during a re-render, the inert markers may hide the modal itself or miss new content.
 - **Stale restoration:** The original state must be restored on close. If the DOM changed while the modal was open (async content loaded, route change, dynamic insertions), the saved state is stale and elements may be left permanently inert.
 - **Multiple modals / nested dialogs:** If another script opens a second modal, or if elements already have `aria-hidden` for other reasons, blindly toggling these attributes can break other components.
+
+The fix therefore relies on `aria-modal="true"` combined with keyboard focus trapping, which is incomplete — screen reader virtual cursor navigation can still escape the modal in browsers/AT that do not honor `aria-modal`.
 
 ---
 
