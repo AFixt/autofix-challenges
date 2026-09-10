@@ -7,6 +7,7 @@
 
 /**
  * Query a single element, accepting a string selector or an element.
+ * @public
  */
 export function query(selectorOrEl, context = document) {
   if (!selectorOrEl) return null;
@@ -24,6 +25,7 @@ export function queryAll(selector, context = document) {
 /**
  * Check if an element has been remediated (prevent double-application).
  * Uses a data attribute marker.
+ * @public
  */
 export function isRemediated(el, fixName) {
   if (!el) return true;
@@ -32,6 +34,7 @@ export function isRemediated(el, fixName) {
 
 /**
  * Mark an element as remediated.
+ * @public
  */
 export function markRemediated(el, fixName) {
   if (el) el.dataset.remediated = fixName;
@@ -39,6 +42,7 @@ export function markRemediated(el, fixName) {
 
 /**
  * Check if a container has already been processed (container-level guard).
+ * @public
  */
 export function isContainerRemediated(container, fixName) {
   if (!container) return true;
@@ -47,6 +51,7 @@ export function isContainerRemediated(container, fixName) {
 
 /**
  * Mark a container as processed.
+ * @public
  */
 export function markContainerRemediated(container, fixName) {
   if (container) container.dataset[`rem_${fixName}`] = 'true';
@@ -56,6 +61,7 @@ export function markContainerRemediated(container, fixName) {
  * Wait for an element to appear in the DOM.
  * Uses MutationObserver with a timeout.
  * Returns a promise that resolves with the element or null on timeout.
+ * @public
  */
 export function waitForElement(selector, timeout = 5000) {
   return new Promise((resolve) => {
@@ -84,6 +90,7 @@ export function waitForElement(selector, timeout = 5000) {
 
 /**
  * Check whether an element is visible (not display:none or visibility:hidden).
+ * @public
  */
 export function isVisible(el) {
   if (!el) return false;

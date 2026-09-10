@@ -1,0 +1,16 @@
+#!/bin/sh
+#
+# Pre-push gate. This repo has no CI, so `npm run check` (ESLint with no
+# warnings allowed, Knip, and a production build) runs here instead.
+#
+# Installed by the `prepare` npm script (git config core.hooksPath .githooks).
+
+echo "pre-push: running npm run check..."
+
+if ! npm run --silent check; then
+  echo "" >&2
+  echo "pre-push: npm run check failed; push blocked." >&2
+  exit 1
+fi
+
+echo "pre-push: check passed."

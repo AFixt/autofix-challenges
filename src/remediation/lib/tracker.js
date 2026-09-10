@@ -100,6 +100,7 @@ export function revertAll() {
 /**
  * Clear tracking data for elements that are no longer in the DOM.
  * Call periodically to prevent memory leaks from removed elements.
+ * @public
  */
 export function pruneDetached() {
   for (const el of attrChanges.keys()) {

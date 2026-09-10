@@ -7,6 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "knip": "knip",
+    "check": "npm run lint -- --max-warnings 0 && npm run knip && npm run build",
+    "prepare": "git config core.hooksPath .githooks 2>/dev/null || true",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -23,6 +26,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
+    "knip": "^6.35.1",
     "vite": "^8.0.1"
   }
 }
