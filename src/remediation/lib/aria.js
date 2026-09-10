@@ -32,6 +32,7 @@ export function setAria(el, attr, value) {
 
 /**
  * Remove an ARIA attribute.
+ * @public
  */
 export function removeAria(el, attr) {
   if (!el) return;
@@ -76,6 +77,7 @@ export function controls(controller, controlled) {
 
 /**
  * Set aria-expanded on an element based on a boolean.
+ * @public
  */
 export function setExpanded(el, expanded) {
   setAria(el, 'expanded', expanded);
@@ -83,6 +85,7 @@ export function setExpanded(el, expanded) {
 
 /**
  * Set aria-selected on an element based on a boolean.
+ * @public
  */
 export function setSelected(el, selected) {
   setAria(el, 'selected', selected);

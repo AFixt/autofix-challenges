@@ -56,6 +56,7 @@ export function announce(message, priority = 'polite') {
 
 /**
  * Announce assertively (interrupts current speech).
+ * @public
  */
 export function announceAssertive(message) {
   announce(message, 'assertive');

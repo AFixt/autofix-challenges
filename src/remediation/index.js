@@ -136,6 +136,7 @@ export function disableRemediation() {
 
 /**
  * Toggle remediation on/off.
+ * @public
  */
 export function toggleRemediation() {
   if (isActive) {
@@ -148,6 +149,7 @@ export function toggleRemediation() {
 
 /**
  * Check if remediation is currently active.
+ * @public
  */
 export function isRemediationActive() {
   return isActive;

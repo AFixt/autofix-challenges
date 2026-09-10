@@ -1,0 +1,12 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema-jsonc.json",
+
+  // No entries to declare: Knip's Vite plugin starts from index.html and
+  // follows src/main.jsx from there.
+  //
+  // src/remediation/lib/ and src/remediation/index.js are the shared utility
+  // library that remediation fixes are written against (CLAUDE.md). Sixteen of
+  // their exports have no caller yet. Each carries a `@public` JSDoc tag, which
+  // Knip honours, rather than a rule silencing the whole directory, so a new
+  // export that nothing uses is still reported.
+}

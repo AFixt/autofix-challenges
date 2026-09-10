@@ -173,3 +173,15 @@ CLAUDE.md              Project context for AI-assisted development
 - [WAI-ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/) — The patterns these components are based on
 - [Overlay Fact Sheet](https://overlayfactsheet.com/) — Joint statement from accessibility practitioners on overlay limitations
 - [WCAG 2.2](https://www.w3.org/TR/WCAG22/) — The standard these components intentionally violate
+
+## Checks
+
+```bash
+npm run check   # ESLint (no warnings allowed) + Knip + production build
+```
+
+`npm install` points git at `.githooks/`, where the pre-push hook runs
+`npm run check`. [Knip](https://knip.dev) reports unused files, exports and
+dependencies, and is kept at zero. The remediation library's exports that
+nothing calls yet are tagged `@public` rather than excluded wholesale, so a new
+unused export is still reported.
