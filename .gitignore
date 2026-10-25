@@ -22,3 +22,13 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment files. A pushed credential has to be rotated however fast you
+# force-push over it, so the real ones never get committed; the example and
+# template forms are re-included so a repo can still document what it needs.
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+!.env.dist
