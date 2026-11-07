@@ -5,6 +5,50 @@
 #
 # Installed by the `prepare` npm script (git config core.hooksPath .githooks).
 
+# git hands this hook one line per ref on stdin:
+#   <local ref> <local sha> <remote ref> <remote sha>
+# Read it once into a variable and replay it, because stdin can only be read
+# once and the secret gate below needs it. `refs` replays it byte for byte when
+# git sent lines, and as nothing at all when it sent none. A terminal on stdin
+# means the hook was run by hand rather than by git: read nothing, rather than
+# block waiting for input that will never come.
+if [ -t 0 ]; then PUSH_REFS=""; else PUSH_REFS="$(cat)"; fi
+refs() { [ -z "$PUSH_REFS" ] || printf '%s\n' "$PUSH_REFS"; }
+
+# Secret gate, deliberately ahead of `npm run check`.
+#
+# The prepare script sets a LOCAL core.hooksPath (.githooks), which overrides
+# the global one, so the fleet-wide pre-push secret scan in
+# ~/.fleet-security/githooks never runs here. `npm run check` below covers
+# ESLint, Knip and a production build — none of which look for credentials.
+# Without the call below this repository has no secret gate at all.
+#
+# It runs first because pushing a credential is the only irreversible failure
+# here: once it reaches the remote it must be rotated, whatever is force-pushed
+# over it afterwards. gitleaks answers in ~0.2s, scoped to the commits being
+# pushed, so going first costs nothing. It also means the scan still happens
+# when node_modules is absent and `npm run check` cannot run at all.
+#
+# The gate lives outside the repository and soft-skips when gitleaks itself is
+# missing. It is guarded because this file is TRACKED and reaches every clone:
+# an unguarded call would return exit 127 on any machine without the fleet
+# tooling and block every push there. It is given the ref lines git passed this
+# hook and the remote name and URL ("$@"), as its contract asks — without those
+# it cannot tell which remote is the target and falls back to treating commits
+# on ANY remote as already published.
+#
+# A present-but-non-executable gate is a broken install, not a clean scan, and
+# says so on stderr rather than passing in silence.
+FLEET_SECRET_GATE="$HOME/.fleet-security/bin/pre-push-secrets"
+if [ -x "$FLEET_SECRET_GATE" ]; then
+  refs | "$FLEET_SECRET_GATE" "$@" || exit 1
+elif [ -e "$FLEET_SECRET_GATE" ]; then
+  echo "  warn: $FLEET_SECRET_GATE is present but not executable." >&2
+  echo "        The pre-push secret scan was SKIPPED. chmod +x it, or remove it." >&2
+else
+  echo "pre-push: fleet secret gate not installed; secret scan skipped." >&2
+fi
+
 echo "pre-push: running npm run check..."
 
 if ! npm run --silent check; then
