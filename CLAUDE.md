@@ -41,3 +41,7 @@ External JavaScript in `src/remediation/` that attempts to repair each component
 **Toggle:** The nav bar has a "Remediation ON/OFF" button that calls `enableRemediation()` / `disableRemediation()` at runtime.
 
 Each fix module documents both the fixes attempted and the **limitations discovered** — the real research value is in what *cannot* be reliably fixed externally.
+
+## Reviewing PRs
+
+Whenever I ask to review a PR (pull request), use the `pr-review` skill.
