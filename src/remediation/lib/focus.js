@@ -19,6 +19,7 @@ const FOCUSABLE_SELECTOR = [
 
 /**
  * Get all focusable elements within a container.
+ * @public
  */
 export function getFocusable(container) {
   if (!container) return [];

@@ -27,6 +27,7 @@ export function onKeyDown(el, name, handler) {
 
 /**
  * Remove a previously attached named keydown handler.
+ * @public
  */
 export function offKeyDown(el, name) {
   if (!el || !el[HANDLER_KEY] || !el[HANDLER_KEY][name]) return;
